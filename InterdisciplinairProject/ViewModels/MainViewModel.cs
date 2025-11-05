@@ -1,9 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using InterdisciplinairProject.Views;
 using System.Diagnostics;
+using System.IO;
+using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 
-namespace InterdiscplinairProject.ViewModels;
+namespace InterdisciplinairProject.ViewModels;
 
 /// <summary>
 /// Main ViewModel for the InterdisciplinairProject application.
@@ -18,8 +22,13 @@ namespace InterdiscplinairProject.ViewModels;
 /// </summary>
 public partial class MainViewModel : ObservableObject
 {
+    private readonly ShowbuilderViewModel _showbuilderViewModel;
+
     [ObservableProperty]
     private string title = "InterdisciplinairProject - DMX Lighting Control";
+
+    [ObservableProperty]
+    private UserControl currentView;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainViewModel"/> class.
@@ -27,12 +36,11 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel()
     {
         Debug.WriteLine("[DEBUG] MainViewModel constructor called");
-        Console.WriteLine("[DEBUG] MainViewModel constructor called");
 
         // Initialize ViewModel, e.g., load services from DI if injected
         OpenFixtureSettingsCommand = new RelayCommand(OpenFixtureSettings);
+        _showbuilderViewModel = new ShowbuilderViewModel();
         Debug.WriteLine("[DEBUG] MainViewModel initialized with OpenFixtureSettingsCommand");
-        Console.WriteLine("[DEBUG] MainViewModel initialized with OpenFixtureSettingsCommand");
     }
 
     /// <summary>
@@ -46,12 +54,21 @@ public partial class MainViewModel : ObservableObject
     private void OpenFixtureSettings()
     {
         Debug.WriteLine("[DEBUG] OpenFixtureSettings() called - Fixture Settings button clicked");
-        Console.WriteLine("[DEBUG] OpenFixtureSettings() called - Fixture Settings button clicked");
         var fixtureSettingsView = new InterdisciplinairProject.Views.FixtureSettingsView();
         Debug.WriteLine("[DEBUG] FixtureSettingsView instance created");
-        Console.WriteLine("[DEBUG] FixtureSettingsView instance created");
         fixtureSettingsView.Show();
         Debug.WriteLine("[DEBUG] FixtureSettingsView.Show() called - window should be visible now");
-        Console.WriteLine("[DEBUG] FixtureSettingsView.Show() called - window should be visible now");
+    }
+
+    [RelayCommand]
+    private void OpenShowBuilder()
+    {
+        CurrentView = new ShowbuilderView(_showbuilderViewModel);
+        Title = "InterdisciplinairProject - Showbuilder";
+    }
+
+    public void SaveCloseForShow()
+    {
+        _showbuilderViewModel.SaveCommand.Execute(currentView);
     }
 }
