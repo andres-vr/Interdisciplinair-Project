@@ -107,7 +107,31 @@ namespace InterdisciplinairProject.ViewModels
                                 FixtureId = f.FixtureId,
                                 Name = f.Name,
                                 Manufacturer = f.Manufacturer,
-                                Dimmer = 0
+                                Dimmer = 0,
+                                // Copy the Channels collection
+                                Channels = new System.Collections.ObjectModel.ObservableCollection<Channel>(
+                                    f.Channels?.Select(c => new Channel
+                                    {
+                                        Name = c.Name,
+                                        Type = c.Type,
+                                        Value = c.Value,
+                                        Parameter = c.Parameter,
+                                        Min = c.Min,
+                                        Max = c.Max,
+                                        Time = c.Time,
+                                        ChannelEffect = new ChannelEffect
+                                        {
+                                            Enabled = c.ChannelEffect?.Enabled ?? false,
+                                            EffectType = c.ChannelEffect?.EffectType ?? Core.Models.Enums.EffectType.FadeIn,
+                                            Time = c.ChannelEffect?.Time ?? 0,
+                                            Min = c.ChannelEffect?.Min ?? 0,
+                                            Max = c.ChannelEffect?.Max ?? 255,
+                                            Parameters = c.ChannelEffect?.Parameters != null 
+                                                ? new System.Collections.Generic.Dictionary<string, object>(c.ChannelEffect.Parameters) 
+                                                : new System.Collections.Generic.Dictionary<string, object>()
+                                        }
+                                    }) ?? Enumerable.Empty<Channel>()
+                                )
                             }).ToList()
                         };
                         Scenes.Add(showScene);
@@ -625,6 +649,28 @@ namespace InterdisciplinairProject.ViewModels
                 TimeLineScenes.Remove(scene);
 
             Message = $"Scene '{scene.ShowScene.Name}' verwijderd.";
+        }
+
+        /// <summary>
+        /// Opens the scene settings window for the selected scene.
+        /// </summary>
+        [RelayCommand]
+        private void OpenSceneSettings(SceneModel? scene)
+        {
+            if (scene == null)
+                return;
+
+            var window = new InterdisciplinairProject.Views.SceneSettingsWindow
+            {
+                Owner = Application.Current?.MainWindow,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            // Create a SceneControlViewModel for the settings window
+            var settingsVm = new SceneControlViewModel(scene, this);
+            window.DataContext = settingsVm;
+
+            window.ShowDialog();
         }
 
     }

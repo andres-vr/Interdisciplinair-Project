@@ -7,12 +7,17 @@
              xmlns:views="clr-namespace:InterdisciplinairProject.Views"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:viewmodels="clr-namespace:InterdisciplinairProject.ViewModels"
+             xmlns:converters="clr-namespace:InterdisciplinairProject.Converters"
              d:DataContext="{d:DesignInstance Type=viewmodels:ShowbuilderViewModel}"
              mc:Ignorable="d"
              Height="auto" Width="auto"
              Background="White">
 
     <UserControl.Resources>
+        <!-- Converters -->
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        
         <!-- ToolBar Tray styling -->
         <SolidColorBrush x:Key="ToolBarTrayBackground" Color="White"/>
         <Style x:Key="ToolBarTrayStyle1" TargetType="{x:Type ToolBarTray}">
@@ -271,9 +276,9 @@
                                            VerticalAlignment="Center"/>
                                 <TextBlock Text=" / " 
                                            FontSize="14" 
-                                           Foreground="#999"
-                                           Margin="5,0"
-                                           VerticalAlignment="Center"/>
+                                   Foreground="#999"
+                                   Margin="5,0"
+                                   VerticalAlignment="Center"/>
                                 <TextBlock Text="00:00:00" 
                                            FontSize="14" 
                                            Foreground="#666"
@@ -363,88 +368,408 @@
                           Width="5"
                           Background="Gray"
                           ShowsPreview="True" Margin="0,0,0,0" />
-            <!-- Fixtures as visual cards -->
-            <ListBox x:Name="fixtureListView"
-                 Grid.Column="1"
-                 Grid.RowSpan="2"
-                 BorderBrush="#DDD"
-                 BorderThickness="1"
-                 Background="WhiteSmoke"
-                 ItemsSource="{Binding SelectedScene.Fixtures}"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                 HorizontalContentAlignment="Stretch">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Border CornerRadius="8"
-                    BorderBrush="#B0B0B0"
-                    BorderThickness="1"
-                    Margin="5"
-                    Padding="10"
-                    Background="White"
-                    SnapsToDevicePixels="True">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+            
+            <!-- Scene Header and Fixtures Section -->
+            <Grid Grid.Column="1" Grid.RowSpan="2" Background="WhiteSmoke">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-                                <StackPanel Grid.Column="0">
-                                    <!-- Fixture title -->
-                                    <TextBlock Text="{Binding Name}"
-                               FontSize="15"
-                               FontWeight="Bold"
-                               Margin="0,0,0,8" />
-                                    <!-- Fixture ID -->
-                                    <StackPanel Margin="0,0,0,4">
-                                        <TextBlock Text="Fixture ID:" FontWeight="SemiBold" Foreground="#666"/>
-                                        <TextBlock Text="{Binding Id}" />
-                                    </StackPanel>
-                                    <!-- Instance ID -->
-                                    <StackPanel Margin="0,0,0,10">
-                                        <TextBlock Text="Instance ID:" FontWeight="SemiBold" Foreground="#666"/>
-                                        <TextBlock Text="{Binding InstanceId}" />
-                                    </StackPanel>
+                <!-- Scene Header -->
+                <Border Grid.Row="0" 
+                        Background="#2196F3"
+                        Padding="15,10"
+                        BorderBrush="#1976D2"
+                        BorderThickness="0,0,0,2">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#000000" Opacity="0.1" BlurRadius="4" ShadowDepth="2" Direction="270"/>
+                    </Border.Effect>
+                    
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                                    <!-- Channels -->
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                                        <!-- Dimmer -->
-                                        <StackPanel Margin="0,0,10,0">
-                                            <TextBlock Text="Dimmer"
-                                               Foreground="#666"
-                                               FontSize="12"/>
-                                            <TextBlock Text="{Binding Dimmer}" FontWeight="SemiBold"/>
-                                        </StackPanel>
-                                        <!-- Red -->
-                                        <StackPanel Margin="0,0,10,0">
-                                            <TextBlock Text="R"
-                                               Foreground="Red"
-                                               FontSize="12"/>
-                                            <TextBlock Text="{Binding Red, FallbackValue=0}"
-                                               FontWeight="SemiBold"/>
-                                        </StackPanel>
-                                        <!-- Green -->
-                                        <StackPanel Margin="0,0,10,0">
-                                            <TextBlock Text="G"
-                                               Foreground="Green"
-                                               FontSize="12"/>
-                                            <TextBlock Text="{Binding Green, FallbackValue=0}"
-                                               FontWeight="SemiBold"/>
-                                        </StackPanel>
-                                        <!-- Blue -->
+                        <!-- Scene Name -->
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Selected Scene" 
+                                       FontSize="11" 
+                                       Foreground="#E3F2FD" 
+                                       Margin="0,0,0,2"/>
+                            <TextBlock Text="{Binding SelectedScene.Name, FallbackValue='No scene selected'}" 
+                                       FontSize="16" 
+                                       FontWeight="Bold" 
+                                       Foreground="White"/>
+                        </StackPanel>
+
+                        <!-- Settings Button -->
+                        <Button Grid.Column="1" 
+                                Width="40" 
+                                Height="40" 
+                                ToolTip="Scene Settings"
+                                Command="{Binding OpenSceneSettingsCommand}"
+                                CommandParameter="{Binding SelectedScene}"
+                                VerticalAlignment="Center"
+                                Margin="10,0,0,0">
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="{x:Type Button}">
+                                                <Border x:Name="border" 
+                                                        Background="#607D8B" 
+                                                        CornerRadius="20" 
+                                                        BorderBrush="#546E7A" 
+                                                        BorderThickness="1.5">
+                                                    <Border.Effect>
+                                                        <DropShadowEffect Color="#000000" 
+                                                                        Opacity="0.15" 
+                                                                        BlurRadius="6" 
+                                                                        ShadowDepth="3" 
+                                                                        Direction="270"/>
+                                                    </Border.Effect>
+
+                                                    <!-- Gear Icon -->
+                                                    <Path Data="M15.95 10.78c.03-.25.05-.51.05-.78s-.02-.53-.06-.78l1.69-1.32c.15-.12.19-.34.1-.51l-1.6-2.77c-.1-.18-.31-.24-.49-.18l-1.99.8c-.42-.32-.86-.58-1.35-.78L12 2.34c-.03-.2-.2-.34-.4-.34H8.4c-.2 0-.36.14-.39.34l-.3 2.12c-.49.2-.94.47-1.35.78l-1.99-.8c-.18-.07-.39 0-.49.18l-1.6 2.77c-.1.18-.06.39.1.51l1.69 1.32c-.04.25-.07.52-.07.78s.02.53.06.78L2.37 12.1c-.15.12-.19.34-.1.51l1.6 2.77c.1.18.31.24.49.18l1.99-.8c.42.32.86.58 1.35.78l.3 2.12c.04.2.2.34.4.34h3.2c.2 0 .37-.14.39-.34l.3-2.12c.49-.2.94-.47 1.35-.78l1.99.8c.18.07.39 0 .49-.18l1.6-2.77c.1-.18.06-.39-.1-.51l-1.67-1.32zM10 13c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z" 
+                                                          Fill="White" 
+                                                          Stretch="Uniform" 
+                                                          Width="20" 
+                                                          Height="20"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"/>
+                                                </Border>
+
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="border" Property="Background" Value="#78909C"/>
+                                                        <Setter TargetName="border" Property="BorderBrush" Value="#607D8B"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter TargetName="border" Property="Background" Value="#BDBDBD"/>
+                                                        <Setter TargetName="border" Property="BorderBrush" Value="#9E9E9E"/>
+                                                        <Setter TargetName="border" Property="Opacity" Value="0.6"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- Fixtures List with Expandable Channel Details -->
+                <ScrollViewer Grid.Row="1" 
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl x:Name="fixturesItemsControl"
+                                  ItemsSource="{Binding SelectedScene.Fixtures}"
+                                  Margin="5">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <!-- Expandable Fixture Card -->
+                                <Expander Margin="5"
+                                          Background="White"
+                                          BorderBrush="#B0B0B0"
+                                          BorderThickness="1">
+                                    <Expander.Style>
+                                        <Style TargetType="Expander">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Expander">
+                                                        <Border CornerRadius="8"
+                                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                                Background="{TemplateBinding Background}"
+                                                                SnapsToDevicePixels="True">
+                                                            <DockPanel>
+                                                                <!-- Header -->
+                                                                <ToggleButton x:Name="HeaderSite"
+                                                                              DockPanel.Dock="Top"
+                                                                              IsChecked="{Binding Path=IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                                                              Background="Transparent"
+                                                                              BorderThickness="0"
+                                                                              Padding="10"
+                                                                              HorizontalContentAlignment="Stretch">
+                                                                    <ContentPresenter ContentSource="Header"
+                                                                                      RecognizesAccessKey="True"/>
+                                                                </ToggleButton>
+                                                                <!-- Content -->
+                                                                <ContentPresenter x:Name="ExpandSite"
+                                                                                  DockPanel.Dock="Bottom"
+                                                                                  Visibility="Collapsed"
+                                                                                  Margin="10,0,10,10"/>
+                                                            </DockPanel>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsExpanded" Value="True">
+                                                                <Setter TargetName="ExpandSite" Property="Visibility" Value="Visible"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Expander.Style>
+
+                                    <!-- Fixture Header -->
+                                    <Expander.Header>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Expand/Collapse Icon -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="▶"
+                                                       FontSize="12"
+                                                       Foreground="#666"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,10,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=Expander}}" Value="True">
+                                                                <Setter Property="Text" Value="▼"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+
+                                            <!-- Fixture Info -->
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontSize="15"
+                                                           FontWeight="Bold"
+                                                           Margin="0,0,0,4"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition/>
+                                                        <RowDefinition/>
+                                                    </Grid.RowDefinitions>
+
+                                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                                               Text="Fixture ID: "
+                                                               FontWeight="SemiBold"
+                                                               Foreground="#666"
+                                                               FontSize="11"/>
+                                                    <TextBlock Grid.Row="0" Grid.Column="1"
+                                                               Text="{Binding FixtureId}"
+                                                               FontSize="11"
+                                                               Margin="5,0,0,0"/>
+
+                                                    <TextBlock Grid.Row="1" Grid.Column="0"
+                                                               Text="Instance ID: "
+                                                               FontWeight="SemiBold"
+                                                               Foreground="#666"
+                                                               FontSize="11"/>
+                                                    <TextBlock Grid.Row="1" Grid.Column="1"
+                                                               Text="{Binding InstanceId}"
+                                                               FontSize="11"
+                                                               Margin="5,0,0,0"/>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Expander.Header>
+
+                                    <!-- Fixture Channels -->
+                                    <Border Background="#FAFAFA"
+                                            BorderBrush="#E0E0E0"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="10">
                                         <StackPanel>
-                                            <TextBlock Text="B"
-                                               Foreground="Blue"
-                                               FontSize="12"/>
-                                            <TextBlock Text="{Binding Blue, FallbackValue=0}"
-                                               FontWeight="SemiBold"/>
+                                            <!-- Channels Header -->
+                                            <TextBlock Text="Channels"
+                                                       FontSize="13"
+                                                       FontWeight="Bold"
+                                                       Foreground="#2196F3"
+                                                       Margin="0,0,0,10"/>
+
+                                            <!-- Channel List -->
+                                            <ItemsControl ItemsSource="{Binding Channels}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="White"
+                                                                BorderBrush="#DDD"
+                                                                BorderThickness="1"
+                                                                CornerRadius="4"
+                                                                Padding="8"
+                                                                Margin="0,0,0,8">
+                                                            <Grid>
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="Auto"/>
+                                                                    <RowDefinition Height="Auto"/>
+                                                                    <RowDefinition Height="Auto"/>
+                                                                </Grid.RowDefinitions>
+
+                                                                <!-- Channel Name & Value -->
+                                                                <Grid Grid.Row="0" Margin="0,0,0,8">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
+                                                                    
+                                                                    <TextBlock Grid.Column="0"
+                                                                               Text="{Binding Name}"
+                                                                               FontWeight="Bold"
+                                                                               FontSize="13"
+                                                                               VerticalAlignment="Center"/>
+                                                                    
+                                                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                                        <TextBlock Text="Value: "
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="#666"
+                                                                                   VerticalAlignment="Center"/>
+                                                                        <TextBlock Text="{Binding Value}"
+                                                                                   FontWeight="Bold"
+                                                                                   Foreground="#2196F3"
+                                                                                   VerticalAlignment="Center"/>
+                                                                    </StackPanel>
+                                                                </Grid>
+
+                                                                <!-- Channel Properties -->
+                                                                <Grid Grid.Row="1" Margin="0,0,0,8">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <StackPanel Grid.Column="0">
+                                                                        <TextBlock Text="Min:" FontSize="10" Foreground="#999"/>
+                                                                        <TextBlock Text="{Binding Min}" FontWeight="SemiBold"/>
+                                                                    </StackPanel>
+
+                                                                    <StackPanel Grid.Column="1">
+                                                                        <TextBlock Text="Max:" FontSize="10" Foreground="#999"/>
+                                                                        <TextBlock Text="{Binding Max}" FontWeight="SemiBold"/>
+                                                                    </StackPanel>
+
+                                                                    <StackPanel Grid.Column="2">
+                                                                        <TextBlock Text="Time (ms):" FontSize="10" Foreground="#999"/>
+                                                                        <TextBlock Text="{Binding Time}" FontWeight="SemiBold"/>
+                                                                    </StackPanel>
+                                                                </Grid>
+
+                                                                <!-- Channel Effect -->
+                                                                <Border Grid.Row="2"
+                                                                        Background="#F0F0F0"
+                                                                        BorderBrush="#CCC"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="3"
+                                                                        Padding="8">
+                                                                    <StackPanel>
+                                                                        <Grid Margin="0,0,0,5">
+                                                                            <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="Auto"/>
+                                                                            </Grid.ColumnDefinitions>
+                                                                            
+                                                                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                                                <TextBlock Text="Channel Effect"
+                                                                                           FontWeight="SemiBold"
+                                                                                           FontSize="11"/>
+                                                                                <TextBlock Text=" - "
+                                                                                           FontWeight="Normal"
+                                                                                           FontSize="11"
+                                                                                           Foreground="#666"
+                                                                                           Margin="5,0"/>
+                                                                                <TextBlock Text="{Binding ChannelEffect.EffectType}"
+                                                                                           FontWeight="SemiBold"
+                                                                                           FontSize="11"
+                                                                                           Foreground="#2196F3"/>
+                                                                            </StackPanel>
+                                                                            
+                                                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                                                <TextBlock Text="Enabled: "
+                                                                                           FontSize="10"
+                                                                                           Foreground="#666"
+                                                                                           VerticalAlignment="Center"/>
+                                                                                <TextBlock Text="{Binding ChannelEffect.Enabled}"
+                                                                                           FontSize="10"
+                                                                                           FontWeight="Bold"
+                                                                                           VerticalAlignment="Center">
+                                                                                    <TextBlock.Style>
+                                                                                        <Style TargetType="TextBlock">
+                                                                                            <Setter Property="Foreground" Value="#4CAF50"/>
+                                                                                            <Style.Triggers>
+                                                                                                <DataTrigger Binding="{Binding ChannelEffect.Enabled}" Value="False">
+                                                                                                    <Setter Property="Foreground" Value="#F44336"/>
+                                                                                                </DataTrigger>
+                                                                                            </Style.Triggers>
+                                                                                        </Style>
+                                                                                    </TextBlock.Style>
+                                                                                </TextBlock>
+                                                                            </StackPanel>
+                                                                        </Grid>
+
+                                                                        <!-- Effect Details (only shown when enabled) -->
+                                                                        <StackPanel Visibility="{Binding ChannelEffect.Enabled, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                            <Grid Margin="0,5,0,0">
+                                                                                <Grid.ColumnDefinitions>
+                                                                                    <ColumnDefinition Width="*"/>
+                                                                                    <ColumnDefinition Width="*"/>
+                                                                                </Grid.ColumnDefinitions>
+                                                                                <Grid.RowDefinitions>
+                                                                                    <RowDefinition/>
+                                                                                    <RowDefinition/>
+                                                                                </Grid.RowDefinitions>
+
+                                                                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,2">
+                                                                                    <TextBlock Text="Time (ms):" FontSize="9" Foreground="#999"/>
+                                                                                    <TextBlock Text="{Binding ChannelEffect.Time}" FontSize="10" FontWeight="SemiBold"/>
+                                                                                </StackPanel>
+
+                                                                                <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,2">
+                                                                                    <TextBlock Text="Min:" FontSize="9" Foreground="#999"/>
+                                                                                    <TextBlock Text="{Binding ChannelEffect.Min}" FontSize="10" FontWeight="SemiBold"/>
+                                                                                </StackPanel>
+
+                                                                                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,2">
+                                                                                    <TextBlock Text="Max:" FontSize="9" Foreground="#999"/>
+                                                                                    <TextBlock Text="{Binding ChannelEffect.Max}" FontSize="10" FontWeight="SemiBold"/>
+                                                                                </StackPanel>
+                                                                            </Grid>
+
+                                                                            <!-- Effect Parameters -->
+                                                                            <ItemsControl ItemsSource="{Binding ChannelEffect.Parameters}"
+                                                                                          Margin="0,5,0,0">
+                                                                                <ItemsControl.ItemTemplate>
+                                                                                    <DataTemplate>
+                                                                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                                                            <TextBlock Text="{Binding Key}" FontSize="9" Foreground="#666"/>
+                                                                                            <TextBlock Text=": " FontSize="9" Foreground="#666"/>
+                                                                                            <TextBlock Text="{Binding Value}" FontSize="9" FontWeight="SemiBold"/>
+                                                                                        </StackPanel>
+                                                                                    </DataTemplate>
+                                                                                </ItemsControl.ItemTemplate>
+                                                                            </ItemsControl>
+                                                                        </StackPanel>
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
                                         </StackPanel>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+                                    </Border>
+                                </Expander>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
         </Grid>
     </DockPanel>
 </UserControl>
