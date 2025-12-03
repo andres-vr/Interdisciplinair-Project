@@ -1,4 +1,4 @@
-﻿﻿using InterdisciplinairProject.Core.Models;
+﻿using InterdisciplinairProject.Core.Models;
 using System;
 using System.IO;
 using System.Text.Json;
@@ -14,29 +14,19 @@ namespace Show
                 throw new FileNotFoundException($"The selected file could not be found: {jsonFilePath}");
             }
 
-            string jsonString;
-
             try
             {
-                jsonString = File.ReadAllText(jsonFilePath);
+                string jsonString = File.ReadAllText(jsonFilePath);
 
-                var doc = JsonDocument.Parse(jsonString);
-                if (!doc.RootElement.TryGetProperty("scene", out var sceneElement))
-                {
-                    throw new InvalidDataException("The JSON file does not contain a 'scene' property.");
-                }
+                var scene = JsonSerializer.Deserialize<Scene>(
+                    jsonString,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }
+                );
 
-                var scene = JsonSerializer.Deserialize<Scene>(sceneElement.GetRawText());
-
-                return scene == null ? throw new InvalidDataException("Failed to deserialize the 'scene' property.") : scene;
-            }
-            catch (FileNotFoundException ex)
-            {
-                throw new FileNotFoundException($"JSON file not found: {ex.Message}", ex);
-            }
-            catch (InvalidDataException ex)
-            {
-                throw new InvalidDataException($"Invalid data in the file: {ex.Message}", ex);
+                return scene ?? throw new InvalidDataException("Failed to deserialize the JSON into a Scene object.");
             }
             catch (JsonException ex)
             {
