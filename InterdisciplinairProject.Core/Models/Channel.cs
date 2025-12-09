@@ -1,13 +1,22 @@
 using System.Text.Json.Serialization;
 using System.Windows.Input;
+using System.ComponentModel;
 
 namespace InterdisciplinairProject.Core.Models;
 
 /// <summary>
 /// Represents a channel in a fixture.
 /// </summary>
-public class Channel
+public class Channel : INotifyPropertyChanged
 {
+    private int _parameter;
+    private string _value = string.Empty;
+
+    /// <summary>
+    /// Occurs when a property value changes.
+    /// </summary>
+    public event PropertyChangedEventHandler? PropertyChanged;
+
     /// <summary>
     /// Gets or sets the name of the channel.
     /// </summary>
@@ -24,13 +33,35 @@ public class Channel
     /// Gets or sets the value of the channel.
     /// </summary>
     [JsonPropertyName("value")]
-    public string Value { get; set; } = string.Empty;
+    public string Value
+    {
+        get => _value;
+        set
+        {
+            if (_value != value)
+            {
+                _value = value;
+                OnPropertyChanged(nameof(Value));
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets the parameter of the channel.
     /// </summary>
     [JsonIgnore]
-    public int Parameter { get; set; }
+    public int Parameter
+    {
+        get => _parameter;
+        set
+        {
+            if (_parameter != value)
+            {
+                _parameter = value;
+                OnPropertyChanged(nameof(Parameter));
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets the minimum value.
@@ -61,4 +92,13 @@ public class Channel
     /// </summary>
     [JsonIgnore]
     public ICommand? TestCommand { get; set; }
+
+    /// <summary>
+    /// Raises the PropertyChanged event.
+    /// </summary>
+    /// <param name="propertyName">Name of the property that changed.</param>
+    protected virtual void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }
