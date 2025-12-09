@@ -18,6 +18,7 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
         <converters:ProgressToPositionConverter x:Key="ProgressToPositionConverter"/>
+        <converters:SceneDurationToWidthConverter x:Key="SceneDurationToWidthConverter"/>
         
         <!-- ToolBar Tray styling -->
         <SolidColorBrush x:Key="ToolBarTrayBackground" Color="White"/>
@@ -131,60 +132,58 @@
                                 <!-- Placeholder content -->
                                 <StackPanel VerticalAlignment="Center" 
                                             HorizontalAlignment="Center"
-                                            Opacity="0.5">
-                                    <TextBlock Text="⏱️" 
-                                               FontSize="48" 
-                                               HorizontalAlignment="Center" 
-                                               Margin="0,0,0,10"/>
-                                    <TextBlock Text="Timeline is empty" 
-                                               FontSize="16" 
-                                               Foreground="#666" 
-                                               HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Add scenes to create a timeline" 
-                                               FontSize="12" 
-                                               Foreground="#999" 
-                                               HorizontalAlignment="Center" 
-                                               Margin="0,5,0,0"/>
+                                            Opacity="0.5">                                    
                                 </StackPanel>
 
                                   <ListBox x:Name="sceneTimeLineListView"
-                                      Margin="0,0,0,0"
-                                      Grid.Column="0"
-                                      Grid.Row="1"
-                                      ItemsSource="{Binding TimeLineScenes}"
-                                      BorderBrush="#CCC"
-                                      BorderThickness="1"
-                                      Background="#FAFAFA"
-                                      SelectionMode="Single"
-                                      HorizontalContentAlignment="Center"
-                                      VirtualizingStackPanel.IsVirtualizing="False">
-                                    <i:Interaction.Behaviors>
-                                        <i:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.2" />
-                                    </i:Interaction.Behaviors>
+         Margin="0"
+         Grid.Column="0"
+         Grid.Row="1"
+         ItemsSource="{Binding TimeLineScenes}"
+         BorderBrush="Transparent"
+         BorderThickness="0"
+         Background="Transparent"
+         Padding="0"
+         SelectionMode="Single"
+         HorizontalContentAlignment="Stretch"
+         VirtualizingStackPanel.IsVirtualizing="False">
+    <i:Interaction.Behaviors>
+        <i:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.2" />
+    </i:Interaction.Behaviors>
 
-                                    <ListBox.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <i:Interaction.Behaviors>
-                                                    <i:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.2" />
-                                                </i:Interaction.Behaviors>
-                                            </StackPanel>
-                                        </ItemsPanelTemplate>
-                                    </ListBox.ItemsPanel>
+    <ListBox.ItemsPanel>
+        <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal">
+                <i:Interaction.Behaviors>
+                    <i:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.2" />
+                </i:Interaction.Behaviors>
+            </StackPanel>
+        </ItemsPanelTemplate>
+    </ListBox.ItemsPanel>
 
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <!-- Let the Scene item be the DataContext for SceneControl -->
-                                            <views:TimelineScene x:Name="timelinescene" Margin="0" DataContext="{Binding}" />
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                    <i:Interaction.Triggers>
-                                        <i:EventTrigger EventName="TimelineSelectionChanged">
-                                            <i:InvokeCommandAction Command="{Binding TimelineSceneSelectionChanged}"
+    <ListBox.ItemContainerStyle>
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+        </Style>
+    </ListBox.ItemContainerStyle>
+
+    <ListBox.ItemTemplate>
+        <DataTemplate>
+            <!-- Let the Scene item be the DataContext for SceneControl -->
+            <views:TimelineScene x:Name="timelinescene" DataContext="{Binding}" />
+        </DataTemplate>
+    </ListBox.ItemTemplate>
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="TimelineSelectionChanged">
+            <i:InvokeCommandAction Command="{Binding TimelineSceneSelectionChanged}"
                                    CommandParameter="{Binding SelectedItem, ElementName=sceneTimeLineListView}" />
-                                        </i:EventTrigger>
-                                    </i:Interaction.Triggers>
-                                </ListBox>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+</ListBox>
                                 <!-- Progress marker overlay (vertical red line) -->
                                 <Canvas Panel.ZIndex="100" VerticalAlignment="Bottom" IsHitTestVisible="False">
                                     <Canvas.Effect>
