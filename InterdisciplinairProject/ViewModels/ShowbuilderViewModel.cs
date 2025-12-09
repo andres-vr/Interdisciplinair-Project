@@ -289,6 +289,21 @@ namespace InterdisciplinairProject.ViewModels
                         }
                     }
 
+
+                    // Load timeline scenes if present
+                    TimeLineScenes.Clear();
+                    if (doc.RootElement.TryGetProperty("timeline", out var timelineElement))
+                    {
+                        var timelineScenes = JsonSerializer.Deserialize<List<TimelineShowScene>>(timelineElement.GetRawText());
+                        if (timelineScenes != null)
+                        {
+                            foreach (var timelineScene in timelineScenes)
+                            {
+                                TimeLineScenes.Add(timelineScene);
+                            }
+                        }
+                    }
+
                     Message = $"Show '{_show.Name}' succesvol geopend!";
                 }
             }
@@ -310,7 +325,11 @@ namespace InterdisciplinairProject.ViewModels
             _show.Scenes = Scenes.ToList();
 
             // Wrap in "show" object for compatible JSON
-            var wrapper = new { show = _show };
+            var wrapper = new
+            {
+                show = _show,
+                timeline = TimeLineScenes.ToList()
+            };
 
             var options = new JsonSerializerOptions
             {
