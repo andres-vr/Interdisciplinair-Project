@@ -22,6 +22,8 @@ namespace InterdisciplinairProject.ViewModels
         private string _durationMs;
         private string _fadeOutMs;
         private string _dimmer;
+        private double _dimmerSlider;
+        private bool _isUpdatingDimmer; // Flag to prevent circular updates
 
         public SceneSettingsViewModel(Window window, SceneModel sceneModel)
         {
@@ -34,6 +36,7 @@ namespace InterdisciplinairProject.ViewModels
             _durationMs = sceneModel.DurationMs.ToString();
             _fadeOutMs = sceneModel.FadeOutMs.ToString();
             _dimmer = sceneModel.Dimmer.ToString();
+            _dimmerSlider = ConvertDimmerToSlider(sceneModel.Dimmer);
 
             SaveCommand = new RelayCommand(ExecuteSave, CanExecuteSave);
             CancelCommand = new RelayCommand(ExecuteCancel);
@@ -115,6 +118,36 @@ namespace InterdisciplinairProject.ViewModels
                     OnPropertyChanged();
                     ValidateDimmer();
                     NotifyCanExecuteChanged();
+                    
+                    // Update slider when textbox changes (0-255 -> 0-100)
+                    if (!_isUpdatingDimmer && int.TryParse(_dimmer, out int dimmerValue))
+                    {
+                        _isUpdatingDimmer = true;
+                        DimmerSlider = ConvertDimmerToSlider(dimmerValue);
+                        _isUpdatingDimmer = false;
+                    }
+                }
+            }
+        }
+
+        public double DimmerSlider
+        {
+            get => _dimmerSlider;
+            set
+            {
+                if (Math.Abs(_dimmerSlider - value) > 0.01)
+                {
+                    _dimmerSlider = value;
+                    OnPropertyChanged();
+                    
+                    // Update textbox when slider changes (0-100 -> 0-255)
+                    if (!_isUpdatingDimmer)
+                    {
+                        _isUpdatingDimmer = true;
+                        int dimmerValue = ConvertSliderToDimmer(_dimmerSlider);
+                        Dimmer = dimmerValue.ToString();
+                        _isUpdatingDimmer = false;
+                    }
                 }
             }
         }
@@ -255,6 +288,22 @@ namespace InterdisciplinairProject.ViewModels
         protected void OnErrorsChanged(string propertyName)
         {
             ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(propertyName));
+        }
+
+        /// <summary>
+        /// Converts dimmer value (0-255) to slider value (0-100).
+        /// </summary>
+        private double ConvertDimmerToSlider(int dimmerValue)
+        {
+            return (dimmerValue / 255.0) * 100.0;
+        }
+
+        /// <summary>
+        /// Converts slider value (0-100) to dimmer value (0-255).
+        /// </summary>
+        private int ConvertSliderToDimmer(double sliderValue)
+        {
+            return (int)Math.Round((sliderValue / 100.0) * 255.0);
         }
     }
 }

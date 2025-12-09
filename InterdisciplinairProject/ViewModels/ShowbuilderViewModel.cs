@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Timers;
 using System.Windows;
 
 using SceneModel = InterdisciplinairProject.Core.Models.Scene;
@@ -50,6 +51,13 @@ namespace InterdisciplinairProject.ViewModels
 
         // new: per-scene fade cancellation tokens
         private readonly Dictionary<SceneModel, CancellationTokenSource> _fadeCts = new();
+
+        // Playback timer and related fields
+        private System.Timers.Timer? _playbackTimer;
+        private double _elapsedMs;
+
+        [ObservableProperty]
+        private bool isPlaying;
 
         // ============================================================
         // CREATE SHOW
@@ -289,6 +297,21 @@ namespace InterdisciplinairProject.ViewModels
                         }
                     }
 
+
+                    // Load timeline scenes if present
+                    TimeLineScenes.Clear();
+                    if (doc.RootElement.TryGetProperty("timeline", out var timelineElement))
+                    {
+                        var timelineScenes = JsonSerializer.Deserialize<List<TimelineShowScene>>(timelineElement.GetRawText());
+                        if (timelineScenes != null)
+                        {
+                            foreach (var timelineScene in timelineScenes)
+                            {
+                                TimeLineScenes.Add(timelineScene);
+                            }
+                        }
+                    }
+
                     Message = $"Show '{_show.Name}' succesvol geopend!";
                 }
             }
@@ -310,7 +333,11 @@ namespace InterdisciplinairProject.ViewModels
             _show.Scenes = Scenes.ToList();
 
             // Wrap in "show" object for compatible JSON
-            var wrapper = new { show = _show };
+            var wrapper = new
+            {
+                show = _show,
+                timeline = TimeLineScenes.ToList()
+            };
 
             var options = new JsonSerializerOptions
             {
@@ -367,7 +394,7 @@ namespace InterdisciplinairProject.ViewModels
             // Cancel any fade in progress for this scene because user is manually changing it
             CancelFadeForScene(scene);
 
-            dimmer = Math.Max(0, Math.Min(100, dimmer));
+            dimmer = Math.Max(0, Math.Min(255, dimmer));
 
             // if we're turning this scene on (dimmer > 0), immediately turn all other scenes off.
             if (dimmer > 0)
@@ -385,18 +412,12 @@ namespace InterdisciplinairProject.ViewModels
                             {
                                 try
                                 {
-                                    // Calculate ratios if needed
-                                    if (!fixture.Channels.Any())
-                                    {
-                                        //fixture.CalculateChannelRatios();
-                                    }
-
                                     // set observable property if available
                                     fixture.Dimmer = 0;
                                 }
                                 catch (Exception ex)
                                 {
-                                    Debug.WriteLine($"[DEBUG] Error zeroing fixture dimmer: {ex.Message}");
+                                    Debug.WriteLine($"[ERROR] Error zeroing fixture dimmer: {ex.Message}");
                                 }
                             }
                         }
@@ -414,22 +435,53 @@ namespace InterdisciplinairProject.ViewModels
             // update fixture channels for the requested scene
             if (scene.Fixtures != null)
             {
-                byte channelValue = (byte)Math.Round(dimmer * 255.0 / 100.0);
+                // Calculate the scene dimmer percentage (0.0 to 1.0)
+                double dimmerPercentage = dimmer / 255.0;
+
                 foreach (var fixture in scene.Fixtures)
                 {
                     try
                     {
-                        // Calculate ratios if needed
-                        if (!fixture.Channels.Any())
-                        {
-                            //fixture.CalculateChannelRatios();
-                        }
-
+                        // Update fixture dimmer for overall control
+                        byte channelValue = (byte)dimmer;
                         fixture.Dimmer = channelValue;
+
+                        // Update individual channels based on their effects
+                        foreach (var channel in fixture.Channels)
+                        {
+                            if (channel.ChannelEffect?.Enabled == true &&
+                                (channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeIn ||
+                                 channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeOut))
+                            {
+                                // Get the channel's min and max values
+                                byte channelMin = channel.ChannelEffect.Min;
+                                byte channelMax = channel.ChannelEffect.Max;
+
+                                // Calculate the value based on effect type
+                                int calculatedValue;
+                                if (channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeIn)
+                                {
+                                    // FadeIn: slider at 0% = channelMin, slider at 100% = channelMax
+                                    calculatedValue = (int)Math.Round(channelMin + (channelMax - channelMin) * dimmerPercentage);
+                                }
+                                else // FadeOut
+                                {
+                                    // FadeOut: slider at 0% = channelMax, slider at 100% = channelMin
+                                    calculatedValue = (int)Math.Round(channelMax - (channelMax - channelMin) * dimmerPercentage);
+                                }
+
+                                // Clamp the value to byte range
+                                calculatedValue = Math.Max(0, Math.Min(255, calculatedValue));
+
+                                // Update the channel value
+                                channel.Parameter = calculatedValue;
+                                channel.Value = calculatedValue.ToString();
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"[DEBUG] Error updating fixture channels/dimmer: {ex.Message}");
+                        Debug.WriteLine($"[ERROR] Error updating fixture channels/dimmer: {ex.Message}");
                     }
                 }
             }
@@ -493,7 +545,7 @@ namespace InterdisciplinairProject.ViewModels
             {
                 token.ThrowIfCancellationRequested();
                 double next = start + delta * i;
-                int nextInt = (int)Math.Round(Math.Max(0, Math.Min(100, next)));
+                int nextInt = (int)Math.Round(Math.Max(0, Math.Min(255, next)));
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
@@ -522,22 +574,53 @@ namespace InterdisciplinairProject.ViewModels
         private void UpdateFixturesForScene(SceneModel scene, int dimmer)
         {
             if (scene?.Fixtures == null) return;
-            byte channelValue = (byte)Math.Round(dimmer * 255.0 / 100.0);
+
+            // Calculate the scene dimmer percentage (0.0 to 1.0)
+            double dimmerPercentage = dimmer / 255.0;
+            byte channelValue = (byte)dimmer;
+
             foreach (var fixture in scene.Fixtures)
             {
                 try
                 {
-                    // Calculate ratios if not yet done
-                    if (!fixture.Channels.Any())
-                    {
-                        //fixture.CalculateChannelRatios();
-                    }
-
                     fixture.Dimmer = channelValue;
+
+                    // Update individual channels based on their effects
+                    foreach (var channel in fixture.Channels)
+                    {
+                        if (channel.ChannelEffect?.Enabled == true &&
+                            (channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeIn ||
+                             channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeOut))
+                        {
+                            // Get the channel's min and max values
+                            byte channelMin = channel.ChannelEffect.Min;
+                            byte channelMax = channel.ChannelEffect.Max;
+
+                            // Calculate the value based on effect type
+                            int calculatedValue;
+                            if (channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeIn)
+                            {
+                                // FadeIn: slider at 0% = channelMin, slider at 100% = channelMax
+                                calculatedValue = (int)Math.Round(channelMin + (channelMax - channelMin) * dimmerPercentage);
+                            }
+                            else // FadeOut
+                            {
+                                // FadeOut: slider at 0% = channelMax, slider at 100% = channelMin
+                                calculatedValue = (int)Math.Round(channelMax - (channelMax - channelMin) * dimmerPercentage);
+                            }
+
+                            // Clamp the value to byte range
+                            calculatedValue = Math.Max(0, Math.Min(255, calculatedValue));
+
+                            // Update the channel value
+                            channel.Parameter = calculatedValue;
+                            channel.Value = calculatedValue.ToString();
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[DEBUG] Error updating fixture channels/dimmer: {ex.Message}");
+                    Debug.WriteLine($"[ERROR] Error updating fixture channels/dimmer: {ex.Message}");
                 }
             }
         }
@@ -694,6 +777,158 @@ namespace InterdisciplinairProject.ViewModels
         public static string FormatTime(System.TimeSpan ts)
         {
             return ts.ToString(@"hh\:mm\:ss");
+        }
+
+        // ============================================================
+        // PLAYBACK TIMER LOGIC
+        // ============================================================
+        
+        /// <summary>
+        /// Gets the total duration of all timeline scenes in milliseconds.
+        /// </summary>
+        private double TotalDurationMs
+        {
+            get
+            {
+                if (TimeLineScenes == null || !TimeLineScenes.Any())
+                    return 0;
+
+                double total = 0;
+                foreach (var scene in TimeLineScenes)
+                {
+                    if (scene?.ShowScene != null)
+                    {
+                        // Add fade in, hold time (if any), and fade out
+                        total += scene.ShowScene.FadeInMs;
+                        total += scene.ShowScene.FadeOutMs;
+                        // You can add scene duration here if your scenes have a hold/duration property
+                    }
+                }
+                return total;
+            }
+        }
+
+        /// <summary>
+        /// Initializes the playback timer with 50ms interval.
+        /// </summary>
+        private void InitializePlaybackTimer()
+        {
+            if (_playbackTimer != null)
+                return;
+
+            _playbackTimer = new System.Timers.Timer(50); // 50ms interval
+            _playbackTimer.Elapsed += PlaybackTimer_Elapsed;
+            _playbackTimer.AutoReset = true;
+        }
+
+        /// <summary>
+        /// Timer elapsed handler that updates elapsed time and progress position.
+        /// </summary>
+        private void PlaybackTimer_Elapsed(object? sender, ElapsedEventArgs e)
+        {
+            _elapsedMs += 50; // Increment by timer interval
+
+            double totalMs = TotalDurationMs;
+            if (totalMs > 0)
+            {
+                // Calculate progress position (0-100)
+                double newProgress = (_elapsedMs / totalMs) * 100;
+                
+                // Update on UI thread
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    ProgressPosition = Math.Min(newProgress, 100);
+                    CurrentTime = TimeSpan.FromMilliseconds(_elapsedMs);
+                    TotalTime = TimeSpan.FromMilliseconds(totalMs);
+                });
+
+                // Stop when we reach the end
+                if (_elapsedMs >= totalMs)
+                {
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        StopPlayback();
+                    });
+                }
+            }
+        }
+
+        /// <summary>
+        /// Toggles between play and pause states.
+        /// </summary>
+        [RelayCommand]
+        private void TogglePlayPause()
+        {
+            if (_playbackTimer == null)
+            {
+                InitializePlaybackTimer();
+            }
+
+            if (IsPlaying)
+            {
+                // Pause
+                _playbackTimer?.Stop();
+                IsPlaying = false;
+                Message = "Playback gepauzeerd";
+            }
+            else
+            {
+                // Play
+                _playbackTimer?.Start();
+                IsPlaying = true;
+                Message = "Playback gestart";
+            }
+        }
+
+        /// <summary>
+        /// Stops playback and resets to the beginning.
+        /// </summary>
+        [RelayCommand]
+        private void StopPlayback()
+        {
+            _playbackTimer?.Stop();
+            IsPlaying = false;
+            _elapsedMs = 0;
+            ProgressPosition = 0;
+            CurrentTime = TimeSpan.Zero;
+            
+            // Keep TotalTime displayed
+            double totalMs = TotalDurationMs;
+            TotalTime = TimeSpan.FromMilliseconds(totalMs);
+            
+            Message = "Playback gestopt";
+        }
+
+        /// <summary>
+        /// Cleanup method to dispose of the timer.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_playbackTimer != null)
+            {
+                _playbackTimer.Stop();
+                _playbackTimer.Elapsed -= PlaybackTimer_Elapsed;
+                _playbackTimer.Dispose();
+                _playbackTimer = null;
+            }
+
+            // Dispose all fade cancellation tokens
+            foreach (var cts in _fadeCts.Values)
+            {
+                try
+                {
+                    cts.Cancel();
+                    cts.Dispose();
+                }
+                catch { }
+            }
+            _fadeCts.Clear();
+        }
+
+        // Destructor to ensure cleanup
+        ~ShowbuilderViewModel()
+        {
+            Dispose();
         }
 
     }

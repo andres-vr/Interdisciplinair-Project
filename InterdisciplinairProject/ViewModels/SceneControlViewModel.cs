@@ -27,7 +27,7 @@ public partial class SceneControlViewModel : ObservableObject
 
         if (_sceneModel != null)
         {
-            _dimmer = _sceneModel.Dimmer;
+            _dimmer = (_sceneModel.Dimmer / 255.0) * 100.0;
             _fadeInMs = _sceneModel.FadeInMs;
             _fadeOutMs = _sceneModel.FadeOutMs;
             _isActive = _dimmer > 0;
@@ -46,8 +46,9 @@ public partial class SceneControlViewModel : ObservableObject
             _suppressParentUpdate = true;
             try
             {
-                if (Dimmer != _sceneModel.Dimmer)
-                    Dimmer = _sceneModel.Dimmer;
+                double percent = (_sceneModel.Dimmer / 255.0) * 100.0;
+                if (Math.Abs(Dimmer - percent) > 0.01)
+                    Dimmer = percent;
             }
             finally
             {
@@ -81,13 +82,16 @@ public partial class SceneControlViewModel : ObservableObject
             return;
 
         // Persist when slider moved manually (UpdateSceneDimmer handles zeroing other scenes and fixture updates).
+        // Since 'value' is 0-100 slider value, convert to 0-255 for model.
+        int dimmerByte = (int)Math.Round((value / 100.0) * 255.0);
+
         if (_sceneModel != null && _parentShowVm != null)
         {
-            _parentShowVm.UpdateSceneDimmer(_sceneModel, (int)Math.Round(value));
+            _parentShowVm.UpdateSceneDimmer(_sceneModel, dimmerByte);
         }
         else if (_sceneModel != null)
         {
-            _sceneModel.Dimmer = (int)Math.Round(value);
+            _sceneModel.Dimmer = dimmerByte;
         }
     }
 
@@ -165,7 +169,8 @@ public partial class SceneControlViewModel : ObservableObject
         {
             try
             {
-                await _parentShowVm.FadeToAndActivateAsync(_sceneModel, 100);
+                // Fade to 100% (255 byte value)
+                await _parentShowVm.FadeToAndActivateAsync(_sceneModel, 255);
             }
             catch (OperationCanceledException) { }
             return;
@@ -178,12 +183,13 @@ public partial class SceneControlViewModel : ObservableObject
         _playCts = new CancellationTokenSource();
         var ct = _playCts.Token;
 
-        double target = 100.0;
+        double targetPercent = 100.0;
+        int targetByte = 255;
         int duration = Math.Max(0, _sceneModel.FadeInMs);
 
         try
         {
-            await AnimateToAsync(target, duration, ct);
+            await AnimateToAsync(targetByte, duration, ct);
         }
         catch (OperationCanceledException)
         {
@@ -191,10 +197,8 @@ public partial class SceneControlViewModel : ObservableObject
         }
     }
 
-    // animate Dimmer over duration (ms). Updates model and fixtures through ShowbuilderViewModel so:
-    // - fixture channels change while animating
-    // - other scenes are zeroed when this scene turns on
-    private async Task AnimateToAsync(double target, int durationMs, CancellationToken ct)
+    // animate Dimmer to target (0-255) over duration (ms). 
+    private async Task AnimateToAsync(int targetByte, int durationMs, CancellationToken ct)
     {
         if (_sceneModel == null)
             return;
@@ -203,36 +207,39 @@ public partial class SceneControlViewModel : ObservableObject
         if (durationMs <= 0)
         {
             if (_parentShowVm != null)
-                _parentShowVm.UpdateSceneDimmer(_sceneModel, (int)Math.Round(target));
+                _parentShowVm.UpdateSceneDimmer(_sceneModel, targetByte);
             else
-                _sceneModel.Dimmer = (int)Math.Round(target);
+                _sceneModel.Dimmer = targetByte;
 
             return;
         }
 
         const int intervalMs = 20;
         int steps = Math.Max(1, durationMs / intervalMs);
-        double start = _sceneModel.Dimmer; // use model as authoritative start
-        double delta = (target - start) / steps;
+        
+        // Start from current model value (0-255)
+        double start = _sceneModel.Dimmer; 
+        double delta = (targetByte - start) / steps;
 
         for (int i = 1; i <= steps; i++)
         {
             ct.ThrowIfCancellationRequested();
 
             double next = start + delta * i;
-            int nextInt = (int)Math.Round(Math.Max(0, Math.Min(100, next)));
+            int nextVal = (int)Math.Round(Math.Max(0, Math.Min(255, next)));
 
             // Use parent VM method so fixtures are updated and other scenes are turned off.
             if (_parentShowVm != null)
             {
-                _parentShowVm.UpdateSceneDimmer(_sceneModel, nextInt);
-                // SceneModel_PropertyChanged will pick up the model change and update this VM's Dimmer property.
+                _parentShowVm.UpdateSceneDimmer(_sceneModel, nextVal);
+                // SceneModel_PropertyChanged will pick up the model change and update this VM's Dimmer property (percentage).
             }
             else
             {
                 // fallback: update model (will trigger property change)
-                _sceneModel.Dimmer = nextInt;
-                Dimmer = nextInt;
+                _sceneModel.Dimmer = nextVal;
+                // Manually update local Dimmer property to percentage for UI
+                Dimmer = (nextVal / 255.0) * 100.0;
             }
 
             await Task.Delay(intervalMs, ct);
@@ -240,8 +247,8 @@ public partial class SceneControlViewModel : ObservableObject
 
         // ensure exact target at end
         if (_parentShowVm != null)
-            _parentShowVm.UpdateSceneDimmer(_sceneModel, (int)Math.Round(target));
+            _parentShowVm.UpdateSceneDimmer(_sceneModel, targetByte);
         else
-            _sceneModel.Dimmer = (int)Math.Round(target);
+            _sceneModel.Dimmer = targetByte;
     }
 }
