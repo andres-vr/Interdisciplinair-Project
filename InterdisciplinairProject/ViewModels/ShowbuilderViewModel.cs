@@ -385,18 +385,12 @@ namespace InterdisciplinairProject.ViewModels
                             {
                                 try
                                 {
-                                    // Calculate ratios if needed
-                                    if (!fixture.Channels.Any())
-                                    {
-                                        //fixture.CalculateChannelRatios();
-                                    }
-
                                     // set observable property if available
                                     fixture.Dimmer = 0;
                                 }
                                 catch (Exception ex)
                                 {
-                                    Debug.WriteLine($"[DEBUG] Error zeroing fixture dimmer: {ex.Message}");
+                                    Debug.WriteLine($"[ERROR] Error zeroing fixture dimmer: {ex.Message}");
                                 }
                             }
                         }
@@ -414,22 +408,53 @@ namespace InterdisciplinairProject.ViewModels
             // update fixture channels for the requested scene
             if (scene.Fixtures != null)
             {
-                byte channelValue = (byte)Math.Round(dimmer * 255.0 / 100.0);
+                // Calculate the scene dimmer percentage (0.0 to 1.0)
+                double dimmerPercentage = dimmer / 100.0;
+
                 foreach (var fixture in scene.Fixtures)
                 {
                     try
                     {
-                        // Calculate ratios if needed
-                        if (!fixture.Channels.Any())
-                        {
-                            //fixture.CalculateChannelRatios();
-                        }
-
+                        // Update fixture dimmer for overall control
+                        byte channelValue = (byte)Math.Round(dimmer * 255.0 / 100.0);
                         fixture.Dimmer = channelValue;
+
+                        // Update individual channels based on their effects
+                        foreach (var channel in fixture.Channels)
+                        {
+                            if (channel.ChannelEffect?.Enabled == true &&
+                                (channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeIn ||
+                                 channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeOut))
+                            {
+                                // Get the channel's min and max values
+                                byte channelMin = channel.ChannelEffect.Min;
+                                byte channelMax = channel.ChannelEffect.Max;
+
+                                // Calculate the value based on effect type
+                                int calculatedValue;
+                                if (channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeIn)
+                                {
+                                    // FadeIn: slider at 0% = channelMin, slider at 100% = channelMax
+                                    calculatedValue = (int)Math.Round(channelMin + (channelMax - channelMin) * dimmerPercentage);
+                                }
+                                else // FadeOut
+                                {
+                                    // FadeOut: slider at 0% = channelMax, slider at 100% = channelMin
+                                    calculatedValue = (int)Math.Round(channelMax - (channelMax - channelMin) * dimmerPercentage);
+                                }
+
+                                // Clamp the value to byte range
+                                calculatedValue = Math.Max(0, Math.Min(255, calculatedValue));
+
+                                // Update the channel value
+                                channel.Parameter = calculatedValue;
+                                channel.Value = calculatedValue.ToString();
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"[DEBUG] Error updating fixture channels/dimmer: {ex.Message}");
+                        Debug.WriteLine($"[ERROR] Error updating fixture channels/dimmer: {ex.Message}");
                     }
                 }
             }
@@ -522,22 +547,53 @@ namespace InterdisciplinairProject.ViewModels
         private void UpdateFixturesForScene(SceneModel scene, int dimmer)
         {
             if (scene?.Fixtures == null) return;
+
+            // Calculate the scene dimmer percentage (0.0 to 1.0)
+            double dimmerPercentage = dimmer / 100.0;
             byte channelValue = (byte)Math.Round(dimmer * 255.0 / 100.0);
+
             foreach (var fixture in scene.Fixtures)
             {
                 try
                 {
-                    // Calculate ratios if not yet done
-                    if (!fixture.Channels.Any())
-                    {
-                        //fixture.CalculateChannelRatios();
-                    }
-
                     fixture.Dimmer = channelValue;
+
+                    // Update individual channels based on their effects
+                    foreach (var channel in fixture.Channels)
+                    {
+                        if (channel.ChannelEffect?.Enabled == true &&
+                            (channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeIn ||
+                             channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeOut))
+                        {
+                            // Get the channel's min and max values
+                            byte channelMin = channel.ChannelEffect.Min;
+                            byte channelMax = channel.ChannelEffect.Max;
+
+                            // Calculate the value based on effect type
+                            int calculatedValue;
+                            if (channel.ChannelEffect.EffectType == Core.Models.Enums.EffectType.FadeIn)
+                            {
+                                // FadeIn: slider at 0% = channelMin, slider at 100% = channelMax
+                                calculatedValue = (int)Math.Round(channelMin + (channelMax - channelMin) * dimmerPercentage);
+                            }
+                            else // FadeOut
+                            {
+                                // FadeOut: slider at 0% = channelMax, slider at 100% = channelMin
+                                calculatedValue = (int)Math.Round(channelMax - (channelMax - channelMin) * dimmerPercentage);
+                            }
+
+                            // Clamp the value to byte range
+                            calculatedValue = Math.Max(0, Math.Min(255, calculatedValue));
+
+                            // Update the channel value
+                            channel.Parameter = calculatedValue;
+                            channel.Value = calculatedValue.ToString();
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[DEBUG] Error updating fixture channels/dimmer: {ex.Message}");
+                    Debug.WriteLine($"[ERROR] Error updating fixture channels/dimmer: {ex.Message}");
                 }
             }
         }

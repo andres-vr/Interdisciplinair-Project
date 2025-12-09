@@ -734,32 +734,6 @@
 
                                                                         <!-- Effect Details (only shown when enabled) -->
                                                                         <StackPanel Visibility="{Binding ChannelEffect.Enabled, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                                            <Grid Margin="0,5,0,0">
-                                                                                <Grid.ColumnDefinitions>
-                                                                                    <ColumnDefinition Width="*"/>
-                                                                                    <ColumnDefinition Width="*"/>
-                                                                                </Grid.ColumnDefinitions>
-                                                                                <Grid.RowDefinitions>
-                                                                                    <RowDefinition/>
-                                                                                    <RowDefinition/>
-                                                                                </Grid.RowDefinitions>
-
-                                                                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,2">
-                                                                                    <TextBlock Text="Time (ms):" FontSize="9" Foreground="#999"/>
-                                                                                    <TextBlock Text="{Binding ChannelEffect.Time}" FontSize="10" FontWeight="SemiBold"/>
-                                                                                </StackPanel>
-
-                                                                                <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,2">
-                                                                                    <TextBlock Text="Min:" FontSize="9" Foreground="#999"/>
-                                                                                    <TextBlock Text="{Binding ChannelEffect.Min}" FontSize="10" FontWeight="SemiBold"/>
-                                                                                </StackPanel>
-
-                                                                                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,2">
-                                                                                    <TextBlock Text="Max:" FontSize="9" Foreground="#999"/>
-                                                                                    <TextBlock Text="{Binding ChannelEffect.Max}" FontSize="10" FontWeight="SemiBold"/>
-                                                                                </StackPanel>
-                                                                            </Grid>
-
                                                                             <!-- Effect Parameters -->
                                                                             <ItemsControl ItemsSource="{Binding ChannelEffect.Parameters}"
                                                                                           Margin="0,5,0,0">
