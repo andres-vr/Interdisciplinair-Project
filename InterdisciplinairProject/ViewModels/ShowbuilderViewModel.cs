@@ -367,7 +367,7 @@ namespace InterdisciplinairProject.ViewModels
             // Cancel any fade in progress for this scene because user is manually changing it
             CancelFadeForScene(scene);
 
-            dimmer = Math.Max(0, Math.Min(100, dimmer));
+            dimmer = Math.Max(0, Math.Min(255, dimmer));
 
             // if we're turning this scene on (dimmer > 0), immediately turn all other scenes off.
             if (dimmer > 0)
@@ -409,14 +409,14 @@ namespace InterdisciplinairProject.ViewModels
             if (scene.Fixtures != null)
             {
                 // Calculate the scene dimmer percentage (0.0 to 1.0)
-                double dimmerPercentage = dimmer / 100.0;
+                double dimmerPercentage = dimmer / 255.0;
 
                 foreach (var fixture in scene.Fixtures)
                 {
                     try
                     {
                         // Update fixture dimmer for overall control
-                        byte channelValue = (byte)Math.Round(dimmer * 255.0 / 100.0);
+                        byte channelValue = (byte)dimmer;
                         fixture.Dimmer = channelValue;
 
                         // Update individual channels based on their effects
@@ -518,7 +518,7 @@ namespace InterdisciplinairProject.ViewModels
             {
                 token.ThrowIfCancellationRequested();
                 double next = start + delta * i;
-                int nextInt = (int)Math.Round(Math.Max(0, Math.Min(100, next)));
+                int nextInt = (int)Math.Round(Math.Max(0, Math.Min(255, next)));
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
@@ -549,8 +549,8 @@ namespace InterdisciplinairProject.ViewModels
             if (scene?.Fixtures == null) return;
 
             // Calculate the scene dimmer percentage (0.0 to 1.0)
-            double dimmerPercentage = dimmer / 100.0;
-            byte channelValue = (byte)Math.Round(dimmer * 255.0 / 100.0);
+            double dimmerPercentage = dimmer / 255.0;
+            byte channelValue = (byte)dimmer;
 
             foreach (var fixture in scene.Fixtures)
             {
