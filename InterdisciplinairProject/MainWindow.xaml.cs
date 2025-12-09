@@ -48,7 +48,7 @@ public partial class MainWindow : Window
         if (DataContext is MainViewModel vm) { 
             if(vm.CurrentView is ShowbuilderView)
             {
-
+                if (vm.AnyUnsavedChanges()) { 
                 MessageBoxResult result = MessageBox.Show(
                     "Do you want to save the changes?",
                     "Confirm",
@@ -68,6 +68,7 @@ public partial class MainWindow : Window
                 else
                 {
                     Environment.Exit(0);
+                }
                 }
             }
         }

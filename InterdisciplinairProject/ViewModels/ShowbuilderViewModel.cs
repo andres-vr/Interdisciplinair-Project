@@ -49,6 +49,9 @@ namespace InterdisciplinairProject.ViewModels
         [ObservableProperty]
         private string? message;
 
+        [ObservableProperty]
+        private bool hasUnsavedChanges = false;
+
         // new: per-scene fade cancellation tokens
         private readonly Dictionary<SceneModel, CancellationTokenSource> _fadeCts = new();
 
@@ -58,6 +61,7 @@ namespace InterdisciplinairProject.ViewModels
 
         [ObservableProperty]
         private bool isPlaying;
+
 
         // ============================================================
         // CREATE SHOW
@@ -153,6 +157,7 @@ namespace InterdisciplinairProject.ViewModels
                         };
                         Scenes.Add(showScene);
                         Message = $"Scene '{scene.Name}' imported successfully!";
+                        hasUnsavedChanges = true;
                     }
                     else
                     {
@@ -204,6 +209,7 @@ namespace InterdisciplinairProject.ViewModels
                     _currentShowPath = path;
                     MessageBox.Show($"Show saved to '{path}'",
                         "Save As", MessageBoxButton.OK, MessageBoxImage.Information);
+                    hasUnsavedChanges = false;
                 }
             }
             catch (Exception ex)
@@ -230,6 +236,7 @@ namespace InterdisciplinairProject.ViewModels
                 SaveShowToPath(_currentShowPath);
                 MessageBox.Show($"Show saved to '{_currentShowPath}'",
                     "Save", MessageBoxButton.OK, MessageBoxImage.Information);
+                hasUnsavedChanges = false;
             }
             catch (Exception ex)
             {
@@ -313,6 +320,7 @@ namespace InterdisciplinairProject.ViewModels
                     }
 
                     Message = $"Show '{_show.Name}' succesvol geopend!";
+                    hasUnsavedChanges = false;
                 }
             }
             catch (JsonException)
@@ -384,6 +392,7 @@ namespace InterdisciplinairProject.ViewModels
                 _show.Scenes.Remove(scene);
 
             Message = $"Scene '{scene.Name}' verwijderd.";
+            hasUnsavedChanges = true;
         }
 
         public void UpdateSceneDimmer(SceneModel scene, int dimmer)
@@ -698,6 +707,7 @@ namespace InterdisciplinairProject.ViewModels
                     TimeLineScenes.Add(scene);
                 }
                 id++;
+                hasUnsavedChanges = true;
             }
             catch (OperationCanceledException) { }
         }
@@ -718,6 +728,7 @@ namespace InterdisciplinairProject.ViewModels
                 if (index >= TimeLineScenes.Count - 1) return; // already last
                 TimeLineScenes.Move(index, index + 1);
             }
+            hasUnsavedChanges = true;
         }
 
         [RelayCommand]
@@ -741,6 +752,7 @@ namespace InterdisciplinairProject.ViewModels
                 TimeLineScenes.Remove(scene);
 
             Message = $"Scene '{scene.ShowScene.Name}' verwijderd.";
+            hasUnsavedChanges = true;
         }
 
         /// <summary>
