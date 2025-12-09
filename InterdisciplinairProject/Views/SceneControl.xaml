@@ -152,7 +152,7 @@
                 </Button>
 
                 <!-- Scene ID with modern typography -->
-                <TextBlock Text="{Binding Id}" 
+                <TextBlock Text="{Binding SceneModel.Name}" 
                            FontWeight="SemiBold" 
                            FontSize="16"
                            Foreground="#2C3E50"
