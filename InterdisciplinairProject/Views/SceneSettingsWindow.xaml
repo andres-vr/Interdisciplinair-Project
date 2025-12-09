@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Scene Settings"
         Width="460"
-        Height="580"
+        Height="620"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
@@ -12,6 +12,7 @@
     <Window.Resources>
         <!-- Converters -->
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        
         <!-- TextBox Style -->
         <Style x:Key="ModernTextBox" TargetType="TextBox">
             <Setter Property="Padding" Value="10,8"/>
@@ -211,11 +212,34 @@
                     <TextBox x:Name="DimmerTextBox"
                              Text="{Binding Dimmer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
                              Style="{StaticResource ModernTextBox}"
-                             Margin="0,0,0,0"/>
+                             Margin="0,0,0,4"/>
                     <TextBlock Style="{StaticResource ErrorText}"
                                Visibility="{Binding (Validation.HasError), ElementName=DimmerTextBox, Converter={StaticResource BooleanToVisibilityConverter}}"
                                Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=DimmerTextBox}"
-                               Margin="0,4,0,0"/>
+                               Margin="0,0,0,8"/>
+                    
+                    <!-- Dimmer Slider (0-100%) -->
+                    <Grid Margin="0,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider Grid.Column="0"
+                                Minimum="0"
+                                Maximum="100"
+                                TickFrequency="1"
+                                IsSnapToTickEnabled="True"
+                                Value="{Binding DimmerSlider, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                VerticalAlignment="Center"
+                                Margin="0,0,10,0"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding DimmerSlider, StringFormat={}{0:F0}%}"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="#666666"
+                                   Width="45"
+                                   TextAlignment="Right"/>
+                    </Grid>
                 </StackPanel>
             </ScrollViewer>
 
