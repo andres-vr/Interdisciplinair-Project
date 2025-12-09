@@ -18,6 +18,8 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
         <converters:ProgressToPositionConverter x:Key="ProgressToPositionConverter"/>
+        <converters:BoolToPlayPauseIconConverter x:Key="BoolToPlayPauseIconConverter"/>
+        <converters:BoolToPlayPauseTextConverter x:Key="BoolToPlayPauseTextConverter"/>
         
         <!-- ToolBar Tray styling -->
         <SolidColorBrush x:Key="ToolBarTrayBackground" Color="White"/>
@@ -190,7 +192,7 @@
                                     <Canvas.Effect>
                                         <DropShadowEffect Color="#000000" Opacity="0.5" BlurRadius="6" ShadowDepth="2"/>
                                     </Canvas.Effect>
-                                    <Line X1="0" Y1="0" X2="0" Y2="800" Stroke="Red" StrokeThickness="3">
+                                    <Line X1="0" Y1="0" X2="0" Y2="800" Stroke="Red" StrokeThickness="5">
                                         <Line.RenderTransform>
                                             <TranslateTransform>
                                                 <TranslateTransform.X>
@@ -233,20 +235,21 @@
                                         Background="#4CAF50" 
                                         BorderBrush="#388E3C"
                                         BorderThickness="2"
-                                        ToolTip="Play/Pause timeline">
+                                        ToolTip="Play/Pause timeline"
+                                        Command="{Binding TogglePlayPauseCommand}">
                                     <Button.Resources>
                                         <Style TargetType="Border">
                                             <Setter Property="CornerRadius" Value="6"/>
                                         </Style>
                                     </Button.Resources>
                                     <StackPanel>
-                                        <TextBlock Text="⏯" 
+                                        <TextBlock Text="{Binding IsPlaying, Converter={StaticResource BoolToPlayPauseIconConverter}}" 
                                                    FontSize="16" 
                                                    Foreground="White" 
                                                    HorizontalAlignment="Center"
                                                    Padding="2"
                                                    Margin="0,-2,0,0"/>
-                                        <TextBlock Text="Play" 
+                                        <TextBlock Text="{Binding IsPlaying, Converter={StaticResource BoolToPlayPauseTextConverter}}" 
                                                    FontSize="8" 
                                                    Foreground="White" 
                                                    HorizontalAlignment="Center"
@@ -261,7 +264,8 @@
                                         Background="#F44336" 
                                         BorderBrush="#D32F2F"
                                         BorderThickness="2"
-                                        ToolTip="Stop timeline">
+                                        ToolTip="Stop timeline"
+                                        Command="{Binding StopPlaybackCommand}">
                                     <Button.Resources>
                                         <Style TargetType="Border">
                                             <Setter Property="CornerRadius" Value="6"/>

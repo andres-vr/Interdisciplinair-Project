@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Timers;
 using System.Windows;
 
 using SceneModel = InterdisciplinairProject.Core.Models.Scene;
@@ -50,6 +51,13 @@ namespace InterdisciplinairProject.ViewModels
 
         // new: per-scene fade cancellation tokens
         private readonly Dictionary<SceneModel, CancellationTokenSource> _fadeCts = new();
+
+        // Playback timer and related fields
+        private System.Timers.Timer? _playbackTimer;
+        private double _elapsedMs;
+
+        [ObservableProperty]
+        private bool isPlaying;
 
         // ============================================================
         // CREATE SHOW
@@ -386,7 +394,7 @@ namespace InterdisciplinairProject.ViewModels
             // Cancel any fade in progress for this scene because user is manually changing it
             CancelFadeForScene(scene);
 
-            dimmer = Math.Max(0, Math.Min(100, dimmer));
+            dimmer = Math.Max(0, Math.Min(255, dimmer));
 
             // if we're turning this scene on (dimmer > 0), immediately turn all other scenes off.
             if (dimmer > 0)
@@ -428,14 +436,14 @@ namespace InterdisciplinairProject.ViewModels
             if (scene.Fixtures != null)
             {
                 // Calculate the scene dimmer percentage (0.0 to 1.0)
-                double dimmerPercentage = dimmer / 100.0;
+                double dimmerPercentage = dimmer / 255.0;
 
                 foreach (var fixture in scene.Fixtures)
                 {
                     try
                     {
                         // Update fixture dimmer for overall control
-                        byte channelValue = (byte)Math.Round(dimmer * 255.0 / 100.0);
+                        byte channelValue = (byte)dimmer;
                         fixture.Dimmer = channelValue;
 
                         // Update individual channels based on their effects
@@ -537,7 +545,7 @@ namespace InterdisciplinairProject.ViewModels
             {
                 token.ThrowIfCancellationRequested();
                 double next = start + delta * i;
-                int nextInt = (int)Math.Round(Math.Max(0, Math.Min(100, next)));
+                int nextInt = (int)Math.Round(Math.Max(0, Math.Min(255, next)));
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
@@ -568,8 +576,8 @@ namespace InterdisciplinairProject.ViewModels
             if (scene?.Fixtures == null) return;
 
             // Calculate the scene dimmer percentage (0.0 to 1.0)
-            double dimmerPercentage = dimmer / 100.0;
-            byte channelValue = (byte)Math.Round(dimmer * 255.0 / 100.0);
+            double dimmerPercentage = dimmer / 255.0;
+            byte channelValue = (byte)dimmer;
 
             foreach (var fixture in scene.Fixtures)
             {
@@ -769,6 +777,158 @@ namespace InterdisciplinairProject.ViewModels
         public static string FormatTime(System.TimeSpan ts)
         {
             return ts.ToString(@"hh\:mm\:ss");
+        }
+
+        // ============================================================
+        // PLAYBACK TIMER LOGIC
+        // ============================================================
+        
+        /// <summary>
+        /// Gets the total duration of all timeline scenes in milliseconds.
+        /// </summary>
+        private double TotalDurationMs
+        {
+            get
+            {
+                if (TimeLineScenes == null || !TimeLineScenes.Any())
+                    return 0;
+
+                double total = 0;
+                foreach (var scene in TimeLineScenes)
+                {
+                    if (scene?.ShowScene != null)
+                    {
+                        // Add fade in, hold time (if any), and fade out
+                        total += scene.ShowScene.FadeInMs;
+                        total += scene.ShowScene.FadeOutMs;
+                        // You can add scene duration here if your scenes have a hold/duration property
+                    }
+                }
+                return total;
+            }
+        }
+
+        /// <summary>
+        /// Initializes the playback timer with 50ms interval.
+        /// </summary>
+        private void InitializePlaybackTimer()
+        {
+            if (_playbackTimer != null)
+                return;
+
+            _playbackTimer = new System.Timers.Timer(50); // 50ms interval
+            _playbackTimer.Elapsed += PlaybackTimer_Elapsed;
+            _playbackTimer.AutoReset = true;
+        }
+
+        /// <summary>
+        /// Timer elapsed handler that updates elapsed time and progress position.
+        /// </summary>
+        private void PlaybackTimer_Elapsed(object? sender, ElapsedEventArgs e)
+        {
+            _elapsedMs += 50; // Increment by timer interval
+
+            double totalMs = TotalDurationMs;
+            if (totalMs > 0)
+            {
+                // Calculate progress position (0-100)
+                double newProgress = (_elapsedMs / totalMs) * 100;
+                
+                // Update on UI thread
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    ProgressPosition = Math.Min(newProgress, 100);
+                    CurrentTime = TimeSpan.FromMilliseconds(_elapsedMs);
+                    TotalTime = TimeSpan.FromMilliseconds(totalMs);
+                });
+
+                // Stop when we reach the end
+                if (_elapsedMs >= totalMs)
+                {
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        StopPlayback();
+                    });
+                }
+            }
+        }
+
+        /// <summary>
+        /// Toggles between play and pause states.
+        /// </summary>
+        [RelayCommand]
+        private void TogglePlayPause()
+        {
+            if (_playbackTimer == null)
+            {
+                InitializePlaybackTimer();
+            }
+
+            if (IsPlaying)
+            {
+                // Pause
+                _playbackTimer?.Stop();
+                IsPlaying = false;
+                Message = "Playback gepauzeerd";
+            }
+            else
+            {
+                // Play
+                _playbackTimer?.Start();
+                IsPlaying = true;
+                Message = "Playback gestart";
+            }
+        }
+
+        /// <summary>
+        /// Stops playback and resets to the beginning.
+        /// </summary>
+        [RelayCommand]
+        private void StopPlayback()
+        {
+            _playbackTimer?.Stop();
+            IsPlaying = false;
+            _elapsedMs = 0;
+            ProgressPosition = 0;
+            CurrentTime = TimeSpan.Zero;
+            
+            // Keep TotalTime displayed
+            double totalMs = TotalDurationMs;
+            TotalTime = TimeSpan.FromMilliseconds(totalMs);
+            
+            Message = "Playback gestopt";
+        }
+
+        /// <summary>
+        /// Cleanup method to dispose of the timer.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_playbackTimer != null)
+            {
+                _playbackTimer.Stop();
+                _playbackTimer.Elapsed -= PlaybackTimer_Elapsed;
+                _playbackTimer.Dispose();
+                _playbackTimer = null;
+            }
+
+            // Dispose all fade cancellation tokens
+            foreach (var cts in _fadeCts.Values)
+            {
+                try
+                {
+                    cts.Cancel();
+                    cts.Dispose();
+                }
+                catch { }
+            }
+            _fadeCts.Clear();
+        }
+
+        // Destructor to ensure cleanup
+        ~ShowbuilderViewModel()
+        {
+            Dispose();
         }
 
     }
