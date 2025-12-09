@@ -31,6 +31,15 @@ namespace InterdisciplinairProject.ViewModels
         private SceneModel? selectedTimelineScene;
 
         [ObservableProperty]
+        private double progressPosition;
+
+        [ObservableProperty]
+        private System.TimeSpan currentTime;
+
+        [ObservableProperty]
+        private System.TimeSpan totalTime;
+
+        [ObservableProperty]
         private string? currentShowId;
 
         [ObservableProperty]
@@ -126,8 +135,8 @@ namespace InterdisciplinairProject.ViewModels
                                             Time = c.ChannelEffect?.Time ?? 0,
                                             Min = c.ChannelEffect?.Min ?? 0,
                                             Max = c.ChannelEffect?.Max ?? 255,
-                                            Parameters = c.ChannelEffect?.Parameters != null 
-                                                ? new System.Collections.Generic.Dictionary<string, object>(c.ChannelEffect.Parameters) 
+                                            Parameters = c.ChannelEffect?.Parameters != null
+                                                ? new System.Collections.Generic.Dictionary<string, object>(c.ChannelEffect.Parameters)
                                                 : new System.Collections.Generic.Dictionary<string, object>()
                                         }
                                     }) ?? Enumerable.Empty<Channel>()
@@ -266,7 +275,7 @@ namespace InterdisciplinairProject.ViewModels
                         {
                             // when opening/importing a show, reset dimmer to 0 so sliders start off
                             scene.Dimmer = 0;
-                            
+
                             // Calculate channel ratios for all fixtures in the scene
                             if (scene.Fixtures != null)
                             {
@@ -275,7 +284,7 @@ namespace InterdisciplinairProject.ViewModels
                                     //fixture.CalculateChannelRatios();
                                 }
                             }
-                            
+
                             Scenes.Add(scene);
                         }
                     }
@@ -381,7 +390,7 @@ namespace InterdisciplinairProject.ViewModels
                                     {
                                         //fixture.CalculateChannelRatios();
                                     }
-                                    
+
                                     // set observable property if available
                                     fixture.Dimmer = 0;
                                 }
@@ -415,7 +424,7 @@ namespace InterdisciplinairProject.ViewModels
                         {
                             //fixture.CalculateChannelRatios();
                         }
-                        
+
                         fixture.Dimmer = channelValue;
                     }
                     catch (Exception ex)
@@ -523,7 +532,7 @@ namespace InterdisciplinairProject.ViewModels
                     {
                         //fixture.CalculateChannelRatios();
                     }
-                    
+
                     fixture.Dimmer = channelValue;
                 }
                 catch (Exception ex)
@@ -592,7 +601,7 @@ namespace InterdisciplinairProject.ViewModels
         [RelayCommand]
         private void AddSceneToTimeline()
         {
-            if(SelectedScene == null)
+            if (SelectedScene == null)
             {
                 return;
             }
@@ -671,6 +680,25 @@ namespace InterdisciplinairProject.ViewModels
             window.DataContext = settingsVm;
 
             window.ShowDialog();
+        }
+
+        // Formatted time properties for binding in the view
+        public string CurrentTimeFormatted => FormatTime(CurrentTime);
+        public string TotalTimeFormatted => FormatTime(TotalTime);
+
+        partial void OnCurrentTimeChanged(System.TimeSpan value)
+        {
+            OnPropertyChanged(nameof(CurrentTimeFormatted));
+        }
+
+        partial void OnTotalTimeChanged(System.TimeSpan value)
+        {
+            OnPropertyChanged(nameof(TotalTimeFormatted));
+        }
+
+        public static string FormatTime(System.TimeSpan ts)
+        {
+            return ts.ToString(@"hh\:mm\:ss");
         }
 
     }

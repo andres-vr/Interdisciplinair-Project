@@ -17,6 +17,7 @@
         <!-- Converters -->
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        <converters:ProgressToPositionConverter x:Key="ProgressToPositionConverter"/>
         
         <!-- ToolBar Tray styling -->
         <SolidColorBrush x:Key="ToolBarTrayBackground" Color="White"/>
@@ -146,7 +147,7 @@
                                                Margin="0,5,0,0"/>
                                 </StackPanel>
 
-                                <ListBox x:Name="sceneTimeLineListView"
+                                  <ListBox x:Name="sceneTimeLineListView"
                                       Margin="0,0,0,0"
                                       Grid.Column="0"
                                       Grid.Row="1"
@@ -184,6 +185,24 @@
                                         </i:EventTrigger>
                                     </i:Interaction.Triggers>
                                 </ListBox>
+                                <!-- Progress marker overlay (vertical red line) -->
+                                <Canvas Panel.ZIndex="100" VerticalAlignment="Bottom" IsHitTestVisible="False">
+                                    <Canvas.Effect>
+                                        <DropShadowEffect Color="#000000" Opacity="0.5" BlurRadius="6" ShadowDepth="2"/>
+                                    </Canvas.Effect>
+                                    <Line X1="0" Y1="0" X2="0" Y2="800" Stroke="Red" StrokeThickness="3">
+                                        <Line.RenderTransform>
+                                            <TranslateTransform>
+                                                <TranslateTransform.X>
+                                                    <MultiBinding Converter="{StaticResource ProgressToPositionConverter}">
+                                                        <Binding Path="ProgressPosition"/>
+                                                        <Binding ElementName="sceneTimeLineListView" Path="ActualWidth"/>
+                                                    </MultiBinding>
+                                                </TranslateTransform.X>
+                                            </TranslateTransform>
+                                        </Line.RenderTransform>
+                                    </Line>
+                                </Canvas>
                                 <!-- ItemsControl for timeline scenes can be added here later -->
                             </Grid>
                         </Border>
@@ -265,25 +284,25 @@
                             </StackPanel>
 
                             <!-- Progress/Time Display (Center) -->
-                            <StackPanel Grid.Column="1" 
-                                        Orientation="Horizontal" 
-                                        HorizontalAlignment="Center" 
-                                        VerticalAlignment="Center">
-                                <TextBlock Text="00:00:00" 
-                                           FontSize="16" 
-                                           FontWeight="Bold" 
-                                           Foreground="#333"
-                                           VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" 
+                                    Orientation="Horizontal" 
+                                    HorizontalAlignment="Center" 
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="{Binding CurrentTimeFormatted}" 
+                                       FontSize="16" 
+                                       FontWeight="Bold" 
+                                       Foreground="#333"
+                                       VerticalAlignment="Center"/>
                                 <TextBlock Text=" / " 
-                                           FontSize="14" 
+                                       FontSize="14" 
                                    Foreground="#999"
                                    Margin="5,0"
                                    VerticalAlignment="Center"/>
-                                <TextBlock Text="00:00:00" 
-                                           FontSize="14" 
-                                           Foreground="#666"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
+                                <TextBlock Text="{Binding TotalTimeFormatted}" 
+                                       FontSize="14" 
+                                       Foreground="#666"
+                                       VerticalAlignment="Center"/>
+                                </StackPanel>
 
                             <!-- Add Scene Button (Right) -->
                             <Button Grid.Column="2" 
