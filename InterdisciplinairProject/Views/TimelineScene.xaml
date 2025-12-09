@@ -5,23 +5,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:InterdisciplinairProject.Views" 
              xmlns:viewmodels="clr-namespace:InterdisciplinairProject.ViewModels"
-             xmlns:converters="clr-namespace:InterdisciplinairProject.Converters"
              d:DataContext="{d:DesignInstance Type=viewmodels:TimeLineViewModel}"
              mc:Ignorable="d" 
-             MinWidth="120"
+             Width="120"
              VerticalAlignment="Stretch">
-
-    <UserControl.Resources>
-        <converters:SceneDurationToWidthConverter x:Key="SceneDurationToWidthConverter"/>
-    </UserControl.Resources>
-
-    <UserControl.Width>
-        <MultiBinding Converter="{StaticResource SceneDurationToWidthConverter}">
-            <Binding Path="SceneModel.ShowScene.FadeInMs"/>
-            <Binding Path="SceneModel.ShowScene.DurationMs"/>
-            <Binding Path="SceneModel.ShowScene.FadeOutMs"/>
-        </MultiBinding>
-    </UserControl.Width>
 
     <Border BorderBrush="#E0E0E0" BorderThickness="2" CornerRadius="0" Padding="5" Margin="0">
         <Border.Background>
@@ -113,7 +100,7 @@
                            TextWrapping="Wrap"
                            MaxWidth="110"/>
             </StackPanel>
-    
+
             <Button Height="25" Width="25" 
                     VerticalAlignment="Bottom" 
                     HorizontalAlignment="Center"
