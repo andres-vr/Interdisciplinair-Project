@@ -116,6 +116,19 @@ public partial class MainViewModel : ObservableObject
         _showbuilderViewModel.SaveCommand.Execute(CurrentView);
     }
 
+    public bool AnyUnsavedChanges()
+    {
+        if (_showbuilderViewModel.HasUnsavedChanges)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+
     /// <summary>
     /// Opens the fixture settings view window.
     /// </summary>
