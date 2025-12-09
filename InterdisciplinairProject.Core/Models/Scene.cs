@@ -10,6 +10,7 @@ public class Scene : INotifyPropertyChanged
     private int _dimmer;
     private int _fadeInMs;
     private int _fadeOutMs;
+    private int _durationMs;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -55,6 +56,18 @@ public class Scene : INotifyPropertyChanged
             if (_fadeOutMs == value) return;
             _fadeOutMs = value;
             OnPropertyChanged(nameof(FadeOutMs));
+        }
+    }
+
+    [JsonPropertyName("durationMs")]
+    public int DurationMs
+    {
+        get => _durationMs;
+        set
+        {
+            if (_durationMs == value) return;
+            _durationMs = value;
+            OnPropertyChanged(nameof(DurationMs));
         }
     }
 

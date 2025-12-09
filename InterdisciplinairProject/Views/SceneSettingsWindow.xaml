@@ -2,14 +2,16 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Scene Settings"
-        Width="440"
-        Height="480"
+        Width="460"
+        Height="580"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         Background="#F5F5F5">
     
     <Window.Resources>
+        <!-- Converters -->
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <!-- TextBox Style -->
         <Style x:Key="ModernTextBox" TargetType="TextBox">
             <Setter Property="Padding" Value="10,8"/>
@@ -30,6 +32,10 @@
                     <Setter Property="Background" Value="#F0F0F0"/>
                     <Setter Property="Foreground" Value="#666666"/>
                 </Trigger>
+                <Trigger Property="Validation.HasError" Value="True">
+                    <Setter Property="BorderBrush" Value="#E81123"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                </Trigger>
             </Style.Triggers>
         </Style>
 
@@ -40,9 +46,17 @@
             <Setter Property="Foreground" Value="#333333"/>
             <Setter Property="Margin" Value="0,0,0,6"/>
         </Style>
+        
+        <!-- Error Text Style -->
+        <Style x:Key="ErrorText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#E81123"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
 
-        <!-- Button Style -->
-        <Style x:Key="ModernButton" TargetType="Button">
+        <!-- Primary Button Style -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
             <Setter Property="Background" Value="#0078D4"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -68,6 +82,45 @@
                 <Trigger Property="IsPressed" Value="True">
                     <Setter Property="Background" Value="#004578"/>
                 </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#CCCCCC"/>
+                    <Setter Property="Foreground" Value="#999999"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <!-- Secondary Button Style -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F5F5F5"/>
+                    <Setter Property="BorderBrush" Value="#999999"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#E5E5E5"/>
+                </Trigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
@@ -75,7 +128,7 @@
     <Border Background="White" 
             CornerRadius="0" 
             Margin="0"
-            Padding="24">
+            Padding="28">
         <Border.Effect>
             <DropShadowEffect BlurRadius="10" 
                             ShadowDepth="2" 
@@ -95,41 +148,91 @@
                        FontSize="20" 
                        FontWeight="Bold" 
                        Foreground="#222222"
-                       Margin="0,0,0,20"/>
+                       Margin="0,0,0,24"/>
 
             <!-- Form Fields -->
-            <StackPanel Grid.Row="1" Orientation="Vertical">
-                <TextBlock Text="Scene ID" Style="{StaticResource ModernLabel}"/>
-                <TextBox Text="{Binding SceneModel.Id, Mode=OneWay}" 
-                         IsReadOnly="True" 
-                         Style="{StaticResource ModernTextBox}"
-                         Margin="0,0,0,16"/>
+            <ScrollViewer Grid.Row="1" 
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Vertical">
+                    <!-- Scene ID (Read-only) -->
+                    <TextBlock Text="Scene ID" Style="{StaticResource ModernLabel}"/>
+                    <TextBox Text="{Binding SceneModel.Id, Mode=OneWay}" 
+                             IsReadOnly="True" 
+                             Style="{StaticResource ModernTextBox}"
+                             Margin="0,0,0,16"/>
 
-                <TextBlock Text="Name" Style="{StaticResource ModernLabel}"/>
-                <TextBox Text="{Binding SceneModel.Name, Mode=OneWay}" 
-                         IsReadOnly="True" 
-                         Style="{StaticResource ModernTextBox}"
-                         Margin="0,0,0,16"/>
+                    <!-- Name -->
+                    <TextBlock Text="Name *" Style="{StaticResource ModernLabel}"/>
+                    <TextBox x:Name="NameTextBox"
+                             Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
+                             Style="{StaticResource ModernTextBox}"
+                             Margin="0,0,0,0"/>
+                    <TextBlock Style="{StaticResource ErrorText}"
+                               Visibility="{Binding (Validation.HasError), ElementName=NameTextBox, Converter={StaticResource BooleanToVisibilityConverter}}"
+                               Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=NameTextBox}"
+                               Margin="0,4,0,16"/>
 
-                <TextBlock Text="Fade In Time (ms)" Style="{StaticResource ModernLabel}"/>
-                <TextBox Text="{Binding FadeInMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                         Style="{StaticResource ModernTextBox}"
-                         Margin="0,0,0,16"/>
+                    <!-- Fade In Time -->
+                    <TextBlock Text="Fade In Time (ms) *" Style="{StaticResource ModernLabel}"/>
+                    <TextBox x:Name="FadeInMsTextBox"
+                             Text="{Binding FadeInMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
+                             Style="{StaticResource ModernTextBox}"
+                             Margin="0,0,0,0"/>
+                    <TextBlock Style="{StaticResource ErrorText}"
+                               Visibility="{Binding (Validation.HasError), ElementName=FadeInMsTextBox, Converter={StaticResource BooleanToVisibilityConverter}}"
+                               Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=FadeInMsTextBox}"
+                               Margin="0,4,0,16"/>
 
-                <TextBlock Text="Fade Out Time (ms)" Style="{StaticResource ModernLabel}"/>
-                <TextBox Text="{Binding FadeOutMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                         Style="{StaticResource ModernTextBox}"/>
-            </StackPanel>
+                    <!-- Duration -->
+                    <TextBlock Text="Duration (ms) *" Style="{StaticResource ModernLabel}"/>
+                    <TextBox x:Name="DurationMsTextBox"
+                             Text="{Binding DurationMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
+                             Style="{StaticResource ModernTextBox}"
+                             Margin="0,0,0,0"/>
+                    <TextBlock Style="{StaticResource ErrorText}"
+                               Visibility="{Binding (Validation.HasError), ElementName=DurationMsTextBox, Converter={StaticResource BooleanToVisibilityConverter}}"
+                               Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=DurationMsTextBox}"
+                               Margin="0,4,0,16"/>
+
+                    <!-- Fade Out Time -->
+                    <TextBlock Text="Fade Out Time (ms) *" Style="{StaticResource ModernLabel}"/>
+                    <TextBox x:Name="FadeOutMsTextBox"
+                             Text="{Binding FadeOutMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
+                             Style="{StaticResource ModernTextBox}"
+                             Margin="0,0,0,0"/>
+                    <TextBlock Style="{StaticResource ErrorText}"
+                               Visibility="{Binding (Validation.HasError), ElementName=FadeOutMsTextBox, Converter={StaticResource BooleanToVisibilityConverter}}"
+                               Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=FadeOutMsTextBox}"
+                               Margin="0,4,0,16"/>
+
+                    <!-- Dimmer -->
+                    <TextBlock Text="Dimmer (0-255) *" Style="{StaticResource ModernLabel}"/>
+                    <TextBox x:Name="DimmerTextBox"
+                             Text="{Binding Dimmer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
+                             Style="{StaticResource ModernTextBox}"
+                             Margin="0,0,0,0"/>
+                    <TextBlock Style="{StaticResource ErrorText}"
+                               Visibility="{Binding (Validation.HasError), ElementName=DimmerTextBox, Converter={StaticResource BooleanToVisibilityConverter}}"
+                               Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=DimmerTextBox}"
+                               Margin="0,4,0,0"/>
+                </StackPanel>
+            </ScrollViewer>
 
             <!-- Footer -->
             <StackPanel Grid.Row="2" 
                        Orientation="Horizontal" 
                        HorizontalAlignment="Right" 
-                       Margin="0,20,0,0">
-                <Button Content="Close" 
+                       Margin="0,24,0,0">
+                <Button Content="Cancel" 
                         Width="100" 
-                        Style="{StaticResource ModernButton}"
-                        Click="Close_Click"/>
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding CancelCommand}"
+                        Margin="0,0,10,0"/>
+                <Button Content="Save" 
+                        Width="100" 
+                        Style="{StaticResource PrimaryButton}"
+                        Command="{Binding SaveCommand}"/>
             </StackPanel>
         </Grid>
     </Border>

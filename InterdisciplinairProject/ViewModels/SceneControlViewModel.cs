@@ -133,15 +133,15 @@ public partial class SceneControlViewModel : ObservableObject
         }
     }
 
-    // New command to open settings window. The window's DataContext will be this view model.
     [RelayCommand]
     private void OpenSettings()
     {
-        var window = new SceneSettingsWindow
+        if (_sceneModel == null)
+            return;
+
+        var window = new SceneSettingsWindow(_sceneModel)
         {
-            DataContext = this,
-            Owner = Application.Current?.MainWindow,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
+            Owner = Application.Current?.MainWindow
         };
 
         window.ShowDialog();

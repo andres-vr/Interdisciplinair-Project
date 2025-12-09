@@ -669,15 +669,10 @@ namespace InterdisciplinairProject.ViewModels
             if (scene == null)
                 return;
 
-            var window = new InterdisciplinairProject.Views.SceneSettingsWindow
+            var window = new InterdisciplinairProject.Views.SceneSettingsWindow(scene)
             {
-                Owner = Application.Current?.MainWindow,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
+                Owner = Application.Current?.MainWindow
             };
-
-            // Create a SceneControlViewModel for the settings window
-            var settingsVm = new SceneControlViewModel(scene, this);
-            window.DataContext = settingsVm;
 
             window.ShowDialog();
         }

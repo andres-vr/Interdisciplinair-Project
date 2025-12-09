@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using InterdisciplinairProject.ViewModels;
+using System.Windows;
+using SceneModel = InterdisciplinairProject.Core.Models.Scene;
 
 namespace InterdisciplinairProject.Views;
 
@@ -7,13 +9,9 @@ namespace InterdisciplinairProject.Views;
 /// </summary>
 public partial class SceneSettingsWindow : Window
 {
-    public SceneSettingsWindow()
+    public SceneSettingsWindow(SceneModel scene)
     {
         InitializeComponent();
-    }
-
-    private void Close_Click(object sender, RoutedEventArgs e)
-    {
-        Close();
+        DataContext = new SceneSettingsViewModel(this, scene);
     }
 }
