@@ -82,10 +82,19 @@ public class Channel : INotifyPropertyChanged
     public int Time { get; set; } = 0;
 
     /// <summary>
+    /// Gets or sets the range.
+    /// </summary>
+    [JsonPropertyName("ranges")]
+    public List<ChannelRange> Ranges { get; set; } = new();
+
+    /// <summary>
     /// Gets or sets the effect type.
     /// </summary>
     [JsonPropertyName("channelEffect")]
     public ChannelEffect ChannelEffect { get; set; } = new ChannelEffect();
+
+    [JsonPropertyName("channelEffects")]
+    public List<ChannelEffect> ChannelEffects { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the test command.
