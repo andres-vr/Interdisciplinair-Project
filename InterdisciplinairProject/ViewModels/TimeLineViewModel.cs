@@ -65,6 +65,10 @@ namespace InterdisciplinairProject.ViewModels
                 {
                     _sceneModel.Duration = value;
                     OnPropertyChanged(nameof(Duration));
+                    if (_parentShowVm != null)
+                    {
+                        _parentShowVm.HasUnsavedChanges = true;
+                    }
                 }
             }
         }

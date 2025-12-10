@@ -132,8 +132,8 @@
             </Button>
             <local:SceneDurationControl 
                      HorizontalAlignment="Right"
-                     VerticalAlignment="Center"
-                     Margin="0,0,-25,0"/>
+                     VerticalAlignment="Top"
+                     Margin="0,44,-22,0"/>
         </Grid>
     </Border>
 </UserControl>
