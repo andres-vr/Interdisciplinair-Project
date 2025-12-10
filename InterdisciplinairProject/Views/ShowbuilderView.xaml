@@ -363,7 +363,7 @@
                          BorderBrush="#CCC"
                          BorderThickness="1"
                          Background="#FAFAFA"
-                         SelectionMode="Single"
+                         SelectionMode="Extended"
                          HorizontalContentAlignment="Center">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -381,7 +381,7 @@
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="SelectionChanged">
                             <i:InvokeCommandAction Command="{Binding SceneSelectionChangedCommand}"
-                                                       CommandParameter="{Binding SelectedItem, ElementName=sceneListView}" />
+                                                       CommandParameter="{Binding SelectedItems, ElementName=sceneListView}" />
                         </i:EventTrigger>
                     </i:Interaction.Triggers>
                 </ListBox>
