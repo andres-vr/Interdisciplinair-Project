@@ -170,6 +170,8 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <!-- Bind ZIndex for overlapping elements -->
+            <Setter Property="Panel.ZIndex" Value="{Binding ZIndex}"/>
         </Style>
     </ListBox.ItemContainerStyle>
 

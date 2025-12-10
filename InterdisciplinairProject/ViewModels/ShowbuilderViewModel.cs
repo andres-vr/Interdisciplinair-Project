@@ -705,11 +705,22 @@ namespace InterdisciplinairProject.ViewModels
                 if (scene.ShowScene != null)
                 {
                     TimeLineScenes.Add(scene);
+                    UpdateTimelineZIndices();
                 }
                 id++;
                 hasUnsavedChanges = true;
             }
             catch (OperationCanceledException) { }
+        }
+
+        private void UpdateTimelineZIndices()
+        {
+            // Reverse Z-Index: First item has highest ZIndex
+            int count = TimeLineScenes.Count;
+            for (int i = 0; i < count; i++)
+            {
+                TimeLineScenes[i].ZIndex = count - i;
+            }
         }
 
         public void MoveTimelineScene(TimelineShowScene scene, string direction)
@@ -726,8 +737,10 @@ namespace InterdisciplinairProject.ViewModels
             else if (direction == "right")
             {
                 if (index >= TimeLineScenes.Count - 1) return; // already last
+                if (index >= TimeLineScenes.Count - 1) return; // already last
                 TimeLineScenes.Move(index, index + 1);
             }
+            UpdateTimelineZIndices();
             hasUnsavedChanges = true;
         }
 
@@ -749,7 +762,10 @@ namespace InterdisciplinairProject.ViewModels
 
             // remove from the UI collection
             if (TimeLineScenes.Contains(scene))
+            {
                 TimeLineScenes.Remove(scene);
+                UpdateTimelineZIndices();
+            }
 
             Message = $"Scene '{scene.ShowScene.Name}' verwijderd.";
             hasUnsavedChanges = true;

@@ -38,16 +38,38 @@ namespace InterdisciplinairProject.ViewModels
         {
             if (_sceneModel == null) return;
 
-            if (e.PropertyName == nameof(TimelineShowScene.Id) || e.PropertyName == nameof(TimelineShowScene.ShowScene.Name))
+            if (e.PropertyName == nameof(TimelineShowScene.Id) || e.PropertyName == "Name") // ShowScene.Name might be harder to track if nested
             {
                 OnPropertyChanged(nameof(Id));
                 OnPropertyChanged(nameof(Name));
             }
+            if (e.PropertyName == nameof(TimelineShowScene.Duration))
+            {
+                OnPropertyChanged(nameof(Duration));
+            }
+            if (e.PropertyName == nameof(TimelineShowScene.ZIndex))
+            {
+                OnPropertyChanged(nameof(ZIndex));
+            }
         }
 
         public TimelineShowScene? SceneModel => _sceneModel;
-        public int? Id => _sceneModel.Id;
-        public string? Name => _sceneModel?.ShowScene.Name;
+        public int? Id => _sceneModel?.Id;
+        public string? Name => _sceneModel?.ShowScene?.Name;
+        public int Duration
+        {
+            get => _sceneModel?.Duration ?? 0;
+            set
+            {
+                if (_sceneModel != null && _sceneModel.Duration != value)
+                {
+                    _sceneModel.Duration = value;
+                    OnPropertyChanged(nameof(Duration));
+                }
+            }
+        }
+        
+        public int ZIndex => _sceneModel?.ZIndex ?? 0;
 
         // Play command: always fade to 100% over the configured FadeInMs.
         [RelayCommand]
