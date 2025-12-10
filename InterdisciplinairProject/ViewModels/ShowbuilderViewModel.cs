@@ -45,6 +45,9 @@ namespace InterdisciplinairProject.ViewModels
         private SceneModel? selectedScene;
 
         [ObservableProperty]
+        private ObservableCollection<SceneModel> selectedScenes = new();
+
+        [ObservableProperty]
         private SceneModel? selectedTimelineScene;
 
         [ObservableProperty]
@@ -213,9 +216,22 @@ namespace InterdisciplinairProject.ViewModels
         // SCENE SELECTION
         // ============================================================
         [RelayCommand]
-        private void SceneSelectionChanged(SceneModel selectedScene)
+        private void SceneSelectionChanged(System.Collections.IList selectedItems)
         {
-            selectedScene = selectedScene;
+            if (selectedItems == null)
+                return;
+
+            SelectedScenes.Clear();
+            foreach (var item in selectedItems)
+            {
+                if (item is SceneModel scene)
+                {
+                    SelectedScenes.Add(scene);
+                }
+            }
+
+            // Keep the single SelectedScene property for backwards compatibility
+            SelectedScene = SelectedScenes.FirstOrDefault();
         }
 
         // ============================================================
@@ -730,24 +746,42 @@ namespace InterdisciplinairProject.ViewModels
         [RelayCommand]
         private void AddSceneToTimeline()
         {
-            if (SelectedScene == null)
+            if (SelectedScenes == null || !SelectedScenes.Any())
             {
+                // Fall back to single selection for backwards compatibility
+                if (SelectedScene != null)
+                {
+                    AddSingleSceneToTimeline(SelectedScene);
+                }
                 return;
             }
+            
             try
             {
-                TimelineShowScene scene = new TimelineShowScene();
-                scene.ShowScene = SelectedScene;
-                scene.Id = id;
-                if (scene.ShowScene != null)
+                // Add all selected scenes to the timeline
+                foreach (var scene in SelectedScenes)
                 {
-                    TimeLineScenes.Add(scene);
-                    UpdateTimelineZIndices();
+                    AddSingleSceneToTimeline(scene);
                 }
-                id++;
                 hasUnsavedChanges = true;
             }
             catch (OperationCanceledException) { }
+        }
+
+        private void AddSingleSceneToTimeline(SceneModel scene)
+        {
+            if (scene == null)
+                return;
+
+            TimelineShowScene timelineScene = new TimelineShowScene();
+            timelineScene.ShowScene = scene;
+            timelineScene.Id = id;
+            if (timelineScene.ShowScene != null)
+            {
+                TimeLineScenes.Add(timelineScene);
+                UpdateTimelineZIndices();
+            }
+            id++;
         }
 
         private void UpdateTimelineZIndices()
