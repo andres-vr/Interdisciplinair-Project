@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using InterdisciplinairProject.Core.Interfaces;
 using InterdisciplinairProject.Core.Models;
+using InterdisciplinairProject.Services;
 using InterdisciplinairProject.Views;
 using Show;
 using System.Collections.ObjectModel;
@@ -8,19 +10,33 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
-using System.Timers;
 using System.Windows;
 
 using SceneModel = InterdisciplinairProject.Core.Models.Scene;
 
 namespace InterdisciplinairProject.ViewModels
 {
-    public partial class ShowbuilderViewModel : ObservableObject
+    /// <summary>
+    /// ViewModel for the ShowBuilder view, managing show creation, scene management, and playback.
+    /// </summary>
+    public partial class ShowbuilderViewModel : ObservableObject, IDisposable
     {
         private InterdisciplinairProject.Core.Models.Show _show = new InterdisciplinairProject.Core.Models.Show();
         private string? _currentShowPath;
 
+        // Services
+        private readonly IHardwareConnection _hardwareConnection;
+        private readonly IShowPlaybackService _showPlaybackService;
+        private CancellationTokenSource? _playbackCts;
+
+        /// <summary>
+        /// Gets the collection of available scenes.
+        /// </summary>
         public ObservableCollection<SceneModel> Scenes { get; } = new();
+
+        /// <summary>
+        /// Gets the collection of timeline scenes.
+        /// </summary>
         public ObservableCollection<TimelineShowScene> TimeLineScenes { get; } = new();
 
         private int id = 1;
@@ -52,15 +68,36 @@ namespace InterdisciplinairProject.ViewModels
         [ObservableProperty]
         private bool hasUnsavedChanges = false;
 
-        // new: per-scene fade cancellation tokens
-        private readonly Dictionary<SceneModel, CancellationTokenSource> _fadeCts = new();
-
-        // Playback timer and related fields
-        private System.Timers.Timer? _playbackTimer;
-        private double _elapsedMs;
-
         [ObservableProperty]
         private bool isPlaying;
+
+        [ObservableProperty]
+        private ShowPlaybackState playbackState = ShowPlaybackState.Idle;
+
+        // per-scene fade cancellation tokens
+        private readonly Dictionary<SceneModel, CancellationTokenSource> _fadeCts = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShowbuilderViewModel"/> class.
+        /// </summary>
+        public ShowbuilderViewModel()
+        {
+            _hardwareConnection = new HardwareConnection();
+            var dmxService = new DmxService();
+            _showPlaybackService = new ShowPlaybackService(_hardwareConnection, dmxService);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShowbuilderViewModel"/> class.
+        /// </summary>
+        /// <param name="hardwareConnection">The hardware connection service.</param>
+        /// <param name="showPlaybackService">The show playback service.</param>
+        public ShowbuilderViewModel(IHardwareConnection hardwareConnection, IShowPlaybackService showPlaybackService)
+        {
+            _hardwareConnection = hardwareConnection ?? throw new ArgumentNullException(nameof(hardwareConnection));
+            _showPlaybackService = showPlaybackService ?? throw new ArgumentNullException(nameof(showPlaybackService));
+        }
+
 
 
         // ============================================================
@@ -789,7 +826,14 @@ namespace InterdisciplinairProject.ViewModels
         }
 
         // Formatted time properties for binding in the view
+        /// <summary>
+        /// Gets the current time formatted as "HH:MM:SS".
+        /// </summary>
         public string CurrentTimeFormatted => FormatTime(CurrentTime);
+
+        /// <summary>
+        /// Gets the total time formatted as "HH:MM:SS".
+        /// </summary>
         public string TotalTimeFormatted => FormatTime(TotalTime);
 
         partial void OnCurrentTimeChanged(System.TimeSpan value)
@@ -802,15 +846,20 @@ namespace InterdisciplinairProject.ViewModels
             OnPropertyChanged(nameof(TotalTimeFormatted));
         }
 
+        /// <summary>
+        /// Formats a TimeSpan as "HH:MM:SS".
+        /// </summary>
+        /// <param name="ts">The TimeSpan to format.</param>
+        /// <returns>Formatted time string.</returns>
         public static string FormatTime(System.TimeSpan ts)
         {
             return ts.ToString(@"hh\:mm\:ss");
         }
 
         // ============================================================
-        // PLAYBACK TIMER LOGIC
+        // PLAYBACK CONTROL (Using IShowPlaybackService)
         // ============================================================
-        
+
         /// <summary>
         /// Gets the total duration of all timeline scenes in milliseconds.
         /// </summary>
@@ -819,93 +868,144 @@ namespace InterdisciplinairProject.ViewModels
             get
             {
                 if (TimeLineScenes == null || !TimeLineScenes.Any())
+                {
                     return 0;
-
-                double total = 0;
-                foreach (var scene in TimeLineScenes)
-                {
-                    if (scene?.ShowScene != null)
-                    {
-                        // Add fade in, hold time (if any), and fade out
-                        total += scene.ShowScene.FadeInMs;
-                        total += scene.ShowScene.FadeOutMs;
-                        // You can add scene duration here if your scenes have a hold/duration property
-                    }
                 }
-                return total;
+
+                return TimeLineScenes.Sum(scene => scene.GetTotalDurationMs());
             }
         }
 
         /// <summary>
-        /// Initializes the playback timer with 50ms interval.
-        /// </summary>
-        private void InitializePlaybackTimer()
-        {
-            if (_playbackTimer != null)
-                return;
-
-            _playbackTimer = new System.Timers.Timer(50); // 50ms interval
-            _playbackTimer.Elapsed += PlaybackTimer_Elapsed;
-            _playbackTimer.AutoReset = true;
-        }
-
-        /// <summary>
-        /// Timer elapsed handler that updates elapsed time and progress position.
-        /// </summary>
-        private void PlaybackTimer_Elapsed(object? sender, ElapsedEventArgs e)
-        {
-            _elapsedMs += 50; // Increment by timer interval
-
-            double totalMs = TotalDurationMs;
-            if (totalMs > 0)
-            {
-                // Calculate progress position (0-100)
-                double newProgress = (_elapsedMs / totalMs) * 100;
-                
-                // Update on UI thread
-                Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    ProgressPosition = Math.Min(newProgress, 100);
-                    CurrentTime = TimeSpan.FromMilliseconds(_elapsedMs);
-                    TotalTime = TimeSpan.FromMilliseconds(totalMs);
-                });
-
-                // Stop when we reach the end
-                if (_elapsedMs >= totalMs)
-                {
-                    Application.Current?.Dispatcher.Invoke(() =>
-                    {
-                        StopPlayback();
-                    });
-                }
-            }
-        }
-
-        /// <summary>
-        /// Toggles between play and pause states.
+        /// Toggles between play and pause states using IShowPlaybackService.
         /// </summary>
         [RelayCommand]
-        private void TogglePlayPause()
+        private async Task TogglePlayPauseAsync()
         {
-            if (_playbackTimer == null)
-            {
-                InitializePlaybackTimer();
-            }
-
             if (IsPlaying)
             {
                 // Pause
-                _playbackTimer?.Stop();
+                _showPlaybackService.Pause();
                 IsPlaying = false;
+                PlaybackState = ShowPlaybackState.Paused;
                 Message = "Playback gepauzeerd";
+            }
+            else if (_showPlaybackService.IsPaused)
+            {
+                // Resume
+                _showPlaybackService.Resume();
+                IsPlaying = true;
+                PlaybackState = ShowPlaybackState.Playing;
+                Message = "Playback hervat";
             }
             else
             {
-                // Play
-                _playbackTimer?.Start();
-                IsPlaying = true;
-                Message = "Playback gestart";
+                // Start new playback
+                await StartPlaybackAsync();
             }
+        }
+
+        /// <summary>
+        /// Starts show playback using IShowPlaybackService.
+        /// </summary>
+        private async Task StartPlaybackAsync()
+        {
+            Debug.WriteLine("[VIEWMODEL] StartPlaybackAsync called");
+
+            if (TimeLineScenes == null || TimeLineScenes.Count == 0)
+            {
+                Debug.WriteLine("[VIEWMODEL] No scenes in timeline!");
+                Message = "Geen scenes in de timeline";
+                return;
+            }
+
+            Debug.WriteLine($"[VIEWMODEL] Timeline has {TimeLineScenes.Count} scenes");
+
+            // Log each scene in the timeline
+            for (int i = 0; i < TimeLineScenes.Count; i++)
+            {
+                var tls = TimeLineScenes[i];
+                Debug.WriteLine($"[VIEWMODEL] Scene {i}: Id={tls.Id}, ShowScene={tls.ShowScene?.Name ?? "NULL"}, " +
+                    $"FadeIn={tls.ShowScene?.FadeInMs ?? 0}ms, Hold={tls.HoldDurationMs}ms, FadeOut={tls.ShowScene?.FadeOutMs ?? 0}ms, " +
+                    $"Fixtures={tls.ShowScene?.Fixtures?.Count ?? 0}");
+
+                // Log fixture details
+                if (tls.ShowScene?.Fixtures != null)
+                {
+                    foreach (var fixture in tls.ShowScene.Fixtures)
+                    {
+                        Debug.WriteLine($"[VIEWMODEL]   Fixture: {fixture.Name}, StartAddr={fixture.StartAddress}, Channels={fixture.Channels?.Count ?? 0}");
+                        if (fixture.Channels != null)
+                        {
+                            foreach (var ch in fixture.Channels)
+                            {
+                                Debug.WriteLine($"[VIEWMODEL]     Channel: {ch.Name}={ch.Parameter} (Value={ch.Value})");
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Build the show with timeline scenes
+            _show.TimelineScenes = TimeLineScenes.ToList();
+            Debug.WriteLine($"[VIEWMODEL] Show has {_show.TimelineScenes.Count} timeline scenes, TotalDurationMs={_show.TotalDurationMs}");
+
+            // Calculate total duration
+            double totalMs = TotalDurationMs;
+            TotalTime = TimeSpan.FromMilliseconds(totalMs);
+            Debug.WriteLine($"[VIEWMODEL] Total duration: {totalMs}ms ({TotalTime})");
+
+            // Create cancellation token
+            _playbackCts?.Cancel();
+            _playbackCts = new CancellationTokenSource();
+
+            // Create progress reporter
+            var progress = new Progress<ShowPlaybackProgress>(OnPlaybackProgressChanged);
+
+            IsPlaying = true;
+            PlaybackState = ShowPlaybackState.Playing;
+            Message = "Playback gestart";
+
+            try
+            {
+                bool success = await _showPlaybackService.StartAsync(_show, progress, _playbackCts.Token);
+
+                if (success)
+                {
+                    Message = "Playback voltooid";
+                    PlaybackState = ShowPlaybackState.Completed;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Message = "Playback geannuleerd";
+                PlaybackState = ShowPlaybackState.Cancelled;
+            }
+            catch (Exception ex)
+            {
+                Message = $"Playback fout: {ex.Message}";
+                PlaybackState = ShowPlaybackState.Error;
+                Debug.WriteLine($"[VIEWMODEL] Playback error: {ex.Message}");
+            }
+            finally
+            {
+                IsPlaying = false;
+            }
+        }
+
+        /// <summary>
+        /// Handles progress updates from IShowPlaybackService.
+        /// </summary>
+        /// <param name="progress">The progress update.</param>
+        private void OnPlaybackProgressChanged(ShowPlaybackProgress progress)
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                ProgressPosition = progress.ProgressPercentage;
+                CurrentTime = progress.CurrentTime;
+                TotalTime = progress.TotalTime;
+                PlaybackState = progress.State;
+            });
         }
 
         /// <summary>
@@ -914,50 +1014,66 @@ namespace InterdisciplinairProject.ViewModels
         [RelayCommand]
         private void StopPlayback()
         {
-            _playbackTimer?.Stop();
+            _playbackCts?.Cancel();
+            _showPlaybackService.Stop();
+
             IsPlaying = false;
-            _elapsedMs = 0;
+            PlaybackState = ShowPlaybackState.Idle;
             ProgressPosition = 0;
             CurrentTime = TimeSpan.Zero;
-            
+
             // Keep TotalTime displayed
             double totalMs = TotalDurationMs;
             TotalTime = TimeSpan.FromMilliseconds(totalMs);
-            
+
             Message = "Playback gestopt";
         }
 
         /// <summary>
-        /// Cleanup method to dispose of the timer.
+        /// Cleanup method to dispose of resources.
         /// </summary>
         public void Dispose()
         {
-            if (_playbackTimer != null)
-            {
-                _playbackTimer.Stop();
-                _playbackTimer.Elapsed -= PlaybackTimer_Elapsed;
-                _playbackTimer.Dispose();
-                _playbackTimer = null;
-            }
-
-            // Dispose all fade cancellation tokens
-            foreach (var cts in _fadeCts.Values)
-            {
-                try
-                {
-                    cts.Cancel();
-                    cts.Dispose();
-                }
-                catch { }
-            }
-            _fadeCts.Clear();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
-        // Destructor to ensure cleanup
+        /// <summary>
+        /// Disposes managed and unmanaged resources.
+        /// </summary>
+        /// <param name="disposing">True if disposing managed resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _playbackCts?.Cancel();
+                _playbackCts?.Dispose();
+                _playbackCts = null;
+
+                // Dispose all fade cancellation tokens
+                foreach (var cts in _fadeCts.Values)
+                {
+                    try
+                    {
+                        cts.Cancel();
+                        cts.Dispose();
+                    }
+                    catch
+                    {
+                        // Ignore disposal exceptions
+                    }
+                }
+
+                _fadeCts.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Finalizer to ensure cleanup.
+        /// </summary>
         ~ShowbuilderViewModel()
         {
-            Dispose();
+            Dispose(false);
         }
-
     }
 }

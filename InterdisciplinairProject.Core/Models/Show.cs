@@ -28,6 +28,20 @@ public class Show
     public List<Scene>? Scenes { get; set; }
 
     /// <summary>
+    /// Gets or sets the ordered timeline scenes for this show.
+    /// These represent the scenes in playback order with timing information.
+    /// </summary>
+    [JsonPropertyName("timelineScenes")]
+    public List<TimelineShowScene>? TimelineScenes { get; set; }
+
+    /// <summary>
+    /// Gets the total duration of the show in milliseconds.
+    /// Calculated from all timeline scenes' fade and hold durations.
+    /// </summary>
+    [JsonIgnore]
+    public int TotalDurationMs => TimelineScenes?.Sum(t => t.GetTotalDurationMs()) ?? 0;
+
+    /// <summary>
     /// Gets the display text for this show.
     /// </summary>
     [JsonIgnore]

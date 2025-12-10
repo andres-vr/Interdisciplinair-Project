@@ -638,4 +638,36 @@ public class HardwareConnection : IHardwareConnection
         Debug.WriteLine($"[DEBUG] Using AppData scenes path: {scenesPath}");
         return scenesPath;
     }
+
+    /// <summary>
+    /// Sends a complete show to the DMX controller asynchronously.
+    /// This initiates playback of all scenes in order with proper timing.
+    /// Delegates to ShowPlaybackService for orchestration.
+    /// </summary>
+    /// <param name="show">The show to send.</param>
+    /// <param name="progress">Optional progress reporter for playback status.</param>
+    /// <param name="cancellationToken">Token to cancel playback.</param>
+    /// <returns>True if the show completed successfully, otherwise false.</returns>
+    public async Task<bool> SendShowAsync(InterdisciplinairProject.Core.Models.Show show, IProgress<ShowPlaybackProgress>? progress = null, CancellationToken cancellationToken = default)
+    {
+        if (show?.TimelineScenes == null || show.TimelineScenes.Count == 0)
+        {
+            Debug.WriteLine("[HARDWARE] SendShowAsync: show or timeline is empty");
+            return false;
+        }
+
+        Debug.WriteLine($"[HARDWARE] SendShowAsync: starting show '{show.Name}' with {show.TimelineScenes.Count} scenes");
+
+        try
+        {
+            var playbackService = new ShowPlaybackService(this, _dmxService);
+            return await playbackService.StartAsync(show, progress, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[HARDWARE] SendShowAsync failed with exception: {ex.Message}");
+            return false;
+        }
+    }
 }
+
