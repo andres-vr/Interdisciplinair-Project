@@ -15,7 +15,7 @@
     </UserControl.Resources>
 
     <Border BorderBrush="#E0E0E0" BorderThickness="2" CornerRadius="0" Padding="5" Margin="0"
-            Width="{Binding TotalDuration, Converter={StaticResource SceneDurationToWidthConverter}}">
+            Width="100">
         <Border.Background>
             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                 <GradientStop Color="#FFFFFF" Offset="0"/>
