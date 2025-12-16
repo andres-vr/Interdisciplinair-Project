@@ -558,6 +558,11 @@ namespace InterdisciplinairProject.ViewModels
                 var idx = Scenes.IndexOf(scene);
                 if (idx >= 0) Scenes[idx] = scene;
             }
+
+            Debug.WriteLine($"[VIEWMODEL] UpdateSceneDimmer: {scene.Name} -> {dimmer}");
+
+            // Send to hardware
+            _ = SendSceneDimmerToHardwareAsync(scene);
         }
 
         // Cancels any running fade for the provided scene
@@ -755,7 +760,7 @@ namespace InterdisciplinairProject.ViewModels
                 }
                 return;
             }
-            
+
             try
             {
                 // Add all selected scenes to the timeline
@@ -858,6 +863,37 @@ namespace InterdisciplinairProject.ViewModels
 
             window.ShowDialog();
         }
+
+        // ============================================================
+        // SCENE DIMMER HARDWARE INTEGRATION
+        // ============================================================
+
+        /// <summary>
+        /// Sends the current scene state to the hardware.
+        /// </summary>
+        private async Task SendSceneDimmerToHardwareAsync(SceneModel scene)
+        {
+            if (scene?.Fixtures == null || scene.Fixtures.Count == 0)
+            {
+                Debug.WriteLine("[VIEWMODEL] SendSceneDimmerToHardwareAsync: no fixtures in scene");
+                return;
+            }
+
+            try
+            {
+                Debug.WriteLine($"[VIEWMODEL] Sending scene {scene.Name} to hardware");
+
+                // Use SendSceneAsync which handles all channels
+                await _hardwareConnection.SendSceneAsync(scene);
+
+                Debug.WriteLine($"[VIEWMODEL] Scene {scene.Name} sent to hardware");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[VIEWMODEL] Error sending scene to hardware: {ex.Message}");
+            }
+        }
+
 
         // Formatted time properties for binding in the view
         /// <summary>
