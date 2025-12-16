@@ -27,6 +27,7 @@ namespace InterdisciplinairProject.ViewModels
         // Services
         private readonly IHardwareConnection _hardwareConnection;
         private readonly IShowPlaybackService _showPlaybackService;
+        private readonly AppSettingsService _appSettingsService;
         private CancellationTokenSource? _playbackCts;
 
         /// <summary>
@@ -88,6 +89,10 @@ namespace InterdisciplinairProject.ViewModels
             _hardwareConnection = new HardwareConnection();
             var dmxService = new DmxService();
             _showPlaybackService = new ShowPlaybackService(_hardwareConnection, dmxService);
+            _appSettingsService = new AppSettingsService();
+            
+            // Load the last show automatically
+            _ = LoadLastShowAsync();
         }
 
         /// <summary>
@@ -99,6 +104,10 @@ namespace InterdisciplinairProject.ViewModels
         {
             _hardwareConnection = hardwareConnection ?? throw new ArgumentNullException(nameof(hardwareConnection));
             _showPlaybackService = showPlaybackService ?? throw new ArgumentNullException(nameof(showPlaybackService));
+            _appSettingsService = new AppSettingsService();
+            
+            // Load the last show automatically
+            _ = LoadLastShowAsync();
         }
 
 
@@ -119,6 +128,7 @@ namespace InterdisciplinairProject.ViewModels
                 // Update current show
                 CurrentShowName = vm.ShowName;
                 Scenes.Clear();
+                TimeLineScenes.Clear();
 
                 _show = new InterdisciplinairProject.Core.Models.Show
                 {
@@ -127,6 +137,9 @@ namespace InterdisciplinairProject.ViewModels
                 };
 
                 _currentShowPath = null;
+                
+                // Clear the last show path when creating a new show
+                _appSettingsService.LastShowPath = null;
 
                 Message = $"Nieuwe show '{vm.ShowName}' aangemaakt!";
             }
@@ -314,66 +327,7 @@ namespace InterdisciplinairProject.ViewModels
                 if (openFileDialog.ShowDialog() == true)
                 {
                     string selectedPath = openFileDialog.FileName;
-                    string jsonString = File.ReadAllText(selectedPath);
-
-                    var doc = JsonDocument.Parse(jsonString);
-                    if (!doc.RootElement.TryGetProperty("show", out var showElement))
-                    {
-                        Message = "Het geselecteerde bestand bevat geen geldige 'show'-structuur.";
-                        return;
-                    }
-
-                    var loadedShow = JsonSerializer.Deserialize<InterdisciplinairProject.Core.Models.Show>(showElement.GetRawText());
-                    if (loadedShow == null)
-                    {
-                        Message = "Kon show niet deserialiseren. Bestand mogelijk corrupt.";
-                        return;
-                    }
-
-                    _show = loadedShow;
-
-                    CurrentShowId = _show.Id;
-                    CurrentShowName = _show.Name;
-                    _currentShowPath = selectedPath;
-
-                    Scenes.Clear();
-                    if (_show.Scenes != null)
-                    {
-                        foreach (var scene in _show.Scenes)
-                        {
-                            // when opening/importing a show, reset dimmer to 0 so sliders start off
-                            scene.Dimmer = 0;
-
-                            // Calculate channel ratios for all fixtures in the scene
-                            if (scene.Fixtures != null)
-                            {
-                                foreach (var fixture in scene.Fixtures)
-                                {
-                                    //fixture.CalculateChannelRatios();
-                                }
-                            }
-
-                            Scenes.Add(scene);
-                        }
-                    }
-
-
-                    // Load timeline scenes if present
-                    TimeLineScenes.Clear();
-                    if (doc.RootElement.TryGetProperty("timeline", out var timelineElement))
-                    {
-                        var timelineScenes = JsonSerializer.Deserialize<List<TimelineShowScene>>(timelineElement.GetRawText());
-                        if (timelineScenes != null)
-                        {
-                            foreach (var timelineScene in timelineScenes)
-                            {
-                                TimeLineScenes.Add(timelineScene);
-                            }
-                        }
-                    }
-
-                    Message = $"Show '{_show.Name}' succesvol geopend!";
-                    hasUnsavedChanges = false;
+                    LoadShowFromPath(selectedPath);
                 }
             }
             catch (JsonException)
@@ -384,6 +338,94 @@ namespace InterdisciplinairProject.ViewModels
             {
                 Message = $"Er is een fout opgetreden bij het openen van de show:\n{ex.Message}";
             }
+        }
+
+        private async Task LoadLastShowAsync()
+        {
+            try
+            {
+                var lastShowPath = _appSettingsService.LastShowPath;
+                if (!string.IsNullOrWhiteSpace(lastShowPath) && File.Exists(lastShowPath))
+                {
+                    // Small delay to ensure UI is ready
+                    await Task.Delay(100);
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        LoadShowFromPath(lastShowPath);
+                        Message = $"Laatste show '{CurrentShowName}' automatisch geladen.";
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[VIEWMODEL] Error loading last show: {ex.Message}");
+            }
+        }
+
+        private void LoadShowFromPath(string selectedPath)
+        {
+            string jsonString = File.ReadAllText(selectedPath);
+
+            var doc = JsonDocument.Parse(jsonString);
+            if (!doc.RootElement.TryGetProperty("show", out var showElement))
+            {
+                Message = "Het geselecteerde bestand bevat geen geldige 'show'-structuur.";
+                return;
+            }
+
+            var loadedShow = JsonSerializer.Deserialize<InterdisciplinairProject.Core.Models.Show>(showElement.GetRawText());
+            if (loadedShow == null)
+            {
+                Message = "Kon show niet deserialiseren. Bestand mogelijk corrupt.";
+                return;
+            }
+
+            _show = loadedShow;
+
+            CurrentShowId = _show.Id;
+            CurrentShowName = _show.Name;
+            _currentShowPath = selectedPath;
+            
+            // Save this as the last opened show
+            _appSettingsService.LastShowPath = selectedPath;
+
+            Scenes.Clear();
+            if (_show.Scenes != null)
+            {
+                foreach (var scene in _show.Scenes)
+                {
+                    // when opening/importing a show, reset dimmer to 0 so sliders start off
+                    scene.Dimmer = 0;
+
+                    // Calculate channel ratios for all fixtures in the scene
+                    if (scene.Fixtures != null)
+                    {
+                        foreach (var fixture in scene.Fixtures)
+                        {
+                            //fixture.CalculateChannelRatios();
+                        }
+                    }
+
+                    Scenes.Add(scene);
+                }
+            }
+
+            // Load timeline scenes if present
+            TimeLineScenes.Clear();
+            if (doc.RootElement.TryGetProperty("timeline", out var timelineElement))
+            {
+                var timelineScenes = JsonSerializer.Deserialize<List<TimelineShowScene>>(timelineElement.GetRawText());
+                if (timelineScenes != null)
+                {
+                    foreach (var timelineScene in timelineScenes)
+                    {
+                        TimeLineScenes.Add(timelineScene);
+                    }
+                }
+            }
+
+            Message = $"Show '{_show.Name}' succesvol geopend!";
+            hasUnsavedChanges = false;
         }
 
         private void SaveShowToPath(string path)
@@ -407,6 +449,9 @@ namespace InterdisciplinairProject.ViewModels
 
             string json = JsonSerializer.Serialize(wrapper, options);
             File.WriteAllText(path, json, Encoding.UTF8);
+            
+            // Save this as the last opened show
+            _appSettingsService.LastShowPath = path;
         }
 
         private string GenerateRandomId()
