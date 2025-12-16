@@ -5,12 +5,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:InterdisciplinairProject.Views" 
              xmlns:viewmodels="clr-namespace:InterdisciplinairProject.ViewModels"
+             xmlns:converters="clr-namespace:InterdisciplinairProject.Converters"
              d:DataContext="{d:DesignInstance Type=viewmodels:TimeLineViewModel}"
              mc:Ignorable="d" 
-             Width="120"
              VerticalAlignment="Stretch">
 
-    <Border BorderBrush="#E0E0E0" BorderThickness="2" CornerRadius="0" Padding="5" Margin="0">
+    <UserControl.Resources>
+        <converters:SceneDurationToWidthConverter x:Key="SceneDurationToWidthConverter"/>
+    </UserControl.Resources>
+
+    <Border BorderBrush="#E0E0E0" BorderThickness="2" CornerRadius="0" Padding="5" Margin="0"
+            Width="{Binding TotalDuration, Converter={StaticResource SceneDurationToWidthConverter}}">
         <Border.Background>
             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                 <GradientStop Color="#FFFFFF" Offset="0"/>

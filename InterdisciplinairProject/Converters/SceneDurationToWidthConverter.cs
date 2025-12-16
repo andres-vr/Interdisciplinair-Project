@@ -8,7 +8,7 @@ namespace InterdisciplinairProject.Converters
     /// Converts scene duration (fadeIn + duration + fadeOut) to width in pixels.
     /// Uses a scale factor where 1 millisecond = configurable pixels (default 0.05px).
     /// </summary>
-    public class SceneDurationToWidthConverter : IMultiValueConverter
+    public class SceneDurationToWidthConverter : IMultiValueConverter, IValueConverter
     {
         // Scale factor: pixels per millisecond (default: 50px per second = 0.05px/ms)
         private const double PixelsPerMillisecond = 0.05;
@@ -44,13 +44,30 @@ namespace InterdisciplinairProject.Converters
             // Calculate total duration in milliseconds
             int totalDurationMs = fadeInMs + durationMs + fadeOutMs;
 
-            // Convert to width (minimum 50px for visibility)
-            double width = Math.Max(50.0, totalDurationMs * PixelsPerMillisecond);
+            return CalculateWidth(totalDurationMs);
+        }
 
-            return width;
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is int totalDurationMs)
+            {
+                return CalculateWidth(totalDurationMs);
+            }
+            return 100.0;
+        }
+
+        private double CalculateWidth(int durationMs)
+        {
+            // Convert to width (minimum 50px for visibility)
+            return Math.Max(50.0, durationMs * PixelsPerMillisecond);
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

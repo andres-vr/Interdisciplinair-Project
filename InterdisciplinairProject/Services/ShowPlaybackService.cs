@@ -344,6 +344,10 @@ public class ShowPlaybackService : IShowPlaybackService
             double totalElapsed = baseElapsedMs + sceneElapsedMs;
             ReportProgress(progress, scene, sceneIndex, totalScenes, sceneElapsedMs, totalElapsed, totalDurationMs, _currentState);
 
+            // IMPORTANT: Ensure we send DMX frames during the hold phase
+            // Many DMX fixtures/controllers require continuous signal stream
+            await ApplyDimmerToSceneAsync(scene, 100);
+
             await Task.Delay(TimerIntervalMs, token);
         }
     }

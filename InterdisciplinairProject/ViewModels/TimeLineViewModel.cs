@@ -51,6 +51,12 @@ namespace InterdisciplinairProject.ViewModels
             {
                 OnPropertyChanged(nameof(ZIndex));
             }
+            if (e.PropertyName == nameof(TimelineShowScene.TotalDurationMs) ||
+                e.PropertyName == nameof(TimelineShowScene.HoldDurationMs))
+            {
+                OnPropertyChanged(nameof(TotalDuration));
+                OnPropertyChanged(nameof(MinimumDuration));
+            }
         }
 
         public TimelineShowScene? SceneModel => _sceneModel;
@@ -72,8 +78,34 @@ namespace InterdisciplinairProject.ViewModels
                 }
             }
         }
-        
+
         public int ZIndex => _sceneModel?.ZIndex ?? 0;
+
+        /// <summary>
+        /// Gets or sets the total duration in milliseconds (FadeIn + Hold + FadeOut).
+        /// </summary>
+        public int TotalDuration
+        {
+            get => _sceneModel?.TotalDurationMs ?? 0;
+            set
+            {
+                if (_sceneModel != null)
+                {
+                    _sceneModel.TotalDurationMs = value;
+                    OnPropertyChanged(nameof(TotalDuration));
+                    if (_parentShowVm != null)
+                    {
+                        _parentShowVm.HasUnsavedChanges = true;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the minimum allowed duration (FadeIn + FadeOut).
+        /// </summary>
+        public int MinimumDuration =>
+            (_sceneModel?.ShowScene?.FadeInMs ?? 0) + (_sceneModel?.ShowScene?.FadeOutMs ?? 0);
 
         // Play command: always fade to 100% over the configured FadeInMs.
         [RelayCommand]

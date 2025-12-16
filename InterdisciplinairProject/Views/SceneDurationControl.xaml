@@ -15,7 +15,7 @@
         <Border.Effect>
             <DropShadowEffect Color="Black" Opacity="0.1" BlurRadius="4" ShadowDepth="1" Direction="270"/>
         </Border.Effect>
-        <TextBox Text="{Binding Duration}"
+        <TextBox Text="{Binding TotalDuration, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                  HorizontalAlignment="Stretch"
                  VerticalAlignment="Center"
                  HorizontalContentAlignment="Center"
@@ -26,6 +26,6 @@
                  Background="Transparent"
                  BorderThickness="0"
                  Padding="0"
-                 ToolTip="Duration (ms)"/>
+                 ToolTip="Total Duration (ms) - minimum: FadeIn + FadeOut"/>
     </Border>
 </UserControl>

@@ -79,6 +79,28 @@ namespace InterdisciplinairProject.Core.Models
         }
 
         /// <summary>
+        /// Gets or sets the total duration in milliseconds (includes FadeIn + Hold + FadeOut).
+        /// Setting this will automatically calculate HoldDurationMs.
+        /// Minimum value is FadeInMs + FadeOutMs.
+        /// </summary>
+        public int TotalDurationMs
+        {
+            get => GetTotalDurationMs();
+            set
+            {
+                int minDuration = (ShowScene?.FadeInMs ?? 0) + (ShowScene?.FadeOutMs ?? 0);
+                int clampedValue = Math.Max(value, minDuration);
+                int newHold = clampedValue - minDuration;
+                if (_holdDurationMs != newHold)
+                {
+                    _holdDurationMs = newHold;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HoldDurationMs)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TotalDurationMs)));
+                }
+            }
+        }
+
+        /// <summary>
         /// Occurs when a property value changes.
         /// </summary>
         public event PropertyChangedEventHandler? PropertyChanged;

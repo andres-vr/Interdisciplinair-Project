@@ -826,6 +826,14 @@ namespace InterdisciplinairProject.ViewModels
             TimelineShowScene timelineScene = new TimelineShowScene();
             timelineScene.ShowScene = scene;
             timelineScene.Id = id;
+
+            // Initialize with a default total duration (FadeIn + 5 seconds hold + FadeOut)
+            // This ensures the timeline scene has a visible duration from the start
+            int defaultHoldMs = 5000; // 5 seconds default hold
+            int fadeIn = scene.FadeInMs;
+            int fadeOut = scene.FadeOutMs;
+            timelineScene.TotalDurationMs = fadeIn + defaultHoldMs + fadeOut;
+
             if (timelineScene.ShowScene != null)
             {
                 TimeLineScenes.Add(timelineScene);
