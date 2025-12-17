@@ -21,7 +21,8 @@
         <converters:SceneDurationToWidthConverter x:Key="SceneDurationToWidthConverter"/>
         <converters:BoolToPlayPauseIconConverter x:Key="BoolToPlayPauseIconConverter"/>
         <converters:BoolToPlayPauseTextConverter x:Key="BoolToPlayPauseTextConverter"/>
-        
+        <converters:PlaybackStateToVisibilityConverter x:Key="PlaybackStateToVisibilityConverter"/>
+
         <!-- ToolBar Tray styling -->
         <SolidColorBrush x:Key="ToolBarTrayBackground" Color="White"/>
         <Style x:Key="ToolBarTrayStyle1" TargetType="{x:Type ToolBarTray}">
@@ -286,6 +287,14 @@
                                                    Margin="0,-3,0,0"/>
                                     </StackPanel>
                                 </Button>
+
+                                <!-- Waiting for TAB Indicator -->
+                                <TextBlock Text="Waiting for TAB..."
+                                           Foreground="DarkBlue"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center"
+                                           Margin="10,0"
+                                           Visibility="{Binding PlaybackState, Converter={StaticResource PlaybackStateToVisibilityConverter}, ConverterParameter=WaitingForTab}"/>
                             </StackPanel>
 
                             <!-- Progress/Time Display (Center) -->
