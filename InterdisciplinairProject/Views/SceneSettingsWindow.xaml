@@ -175,25 +175,25 @@
                                Margin="0,4,0,16"/>
 
                     <!-- Fade In Time -->
-                    <TextBlock Text="Fade In Time (ms) *" Style="{StaticResource ModernLabel}"/>
-                    <TextBox x:Name="FadeInMsTextBox"
-                             Text="{Binding FadeInMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
+                    <TextBlock Text="Fade In Time (seconds) *" Style="{StaticResource ModernLabel}"/>
+                    <TextBox x:Name="FadeInSecondsTextBox"
+                             Text="{Binding FadeInSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
                              Style="{StaticResource ModernTextBox}"
                              Margin="0,0,0,0"/>
                     <TextBlock Style="{StaticResource ErrorText}"
-                               Visibility="{Binding (Validation.HasError), ElementName=FadeInMsTextBox, Converter={StaticResource BooleanToVisibilityConverter}}"
-                               Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=FadeInMsTextBox}"
+                               Visibility="{Binding (Validation.HasError), ElementName=FadeInSecondsTextBox, Converter={StaticResource BooleanToVisibilityConverter}}"
+                               Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=FadeInSecondsTextBox}"
                                Margin="0,4,0,16"/>
 
                     <!-- Fade Out Time -->
-                    <TextBlock Text="Fade Out Time (ms) *" Style="{StaticResource ModernLabel}"/>
-                    <TextBox x:Name="FadeOutMsTextBox"
-                             Text="{Binding FadeOutMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
+                    <TextBlock Text="Fade Out Time (seconds) *" Style="{StaticResource ModernLabel}"/>
+                    <TextBox x:Name="FadeOutSecondsTextBox"
+                             Text="{Binding FadeOutSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
                              Style="{StaticResource ModernTextBox}"
                              Margin="0,0,0,0"/>
                     <TextBlock Style="{StaticResource ErrorText}"
-                               Visibility="{Binding (Validation.HasError), ElementName=FadeOutMsTextBox, Converter={StaticResource BooleanToVisibilityConverter}}"
-                               Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=FadeOutMsTextBox}"
+                               Visibility="{Binding (Validation.HasError), ElementName=FadeOutSecondsTextBox, Converter={StaticResource BooleanToVisibilityConverter}}"
+                               Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=FadeOutSecondsTextBox}"
                                Margin="0,4,0,16"/>
 
                     <!-- Dimmer -->

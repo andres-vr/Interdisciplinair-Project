@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using System.Collections;
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
@@ -13,14 +14,16 @@ namespace InterdisciplinairProject.ViewModels
     /// </summary>
     public class SceneSettingsViewModel : INotifyPropertyChanged, INotifyDataErrorInfo
     {
+        private static readonly CultureInfo CommaCulture = new CultureInfo("nl-NL"); // Dutch culture uses comma
+        
         private readonly Window _window;
         private readonly SceneModel _sceneModel;
         private readonly Dictionary<string, List<string>> _errors = new();
 
         private string _name;
-        private string _fadeInMs;
+        private string _fadeInSeconds;
         private string _durationMs;
-        private string _fadeOutMs;
+        private string _fadeOutSeconds;
         private string _dimmer;
         private double _dimmerSlider;
         private bool _isUpdatingDimmer; // Flag to prevent circular updates
@@ -30,11 +33,11 @@ namespace InterdisciplinairProject.ViewModels
             _window = window;
             _sceneModel = sceneModel;
 
-            // Initialize with current scene values
+            // Initialize with current scene values (convert ms to seconds)
             _name = sceneModel.Name ?? string.Empty;
-            _fadeInMs = sceneModel.FadeInMs.ToString();
+            _fadeInSeconds = ConvertMillisecondsToSeconds(sceneModel.FadeInMs);
             _durationMs = sceneModel.DurationMs.ToString();
-            _fadeOutMs = sceneModel.FadeOutMs.ToString();
+            _fadeOutSeconds = ConvertMillisecondsToSeconds(sceneModel.FadeOutMs);
             _dimmer = sceneModel.Dimmer.ToString();
             _dimmerSlider = ConvertDimmerToSlider(sceneModel.Dimmer);
 
@@ -62,16 +65,16 @@ namespace InterdisciplinairProject.ViewModels
             }
         }
 
-        public string FadeInMs
+        public string FadeInSeconds
         {
-            get => _fadeInMs;
+            get => _fadeInSeconds;
             set
             {
-                if (_fadeInMs != value)
+                if (_fadeInSeconds != value)
                 {
-                    _fadeInMs = value;
+                    _fadeInSeconds = value;
                     OnPropertyChanged();
-                    ValidateFadeInMs();
+                    ValidateFadeInSeconds();
                     NotifyCanExecuteChanged();
                 }
             }
@@ -92,16 +95,16 @@ namespace InterdisciplinairProject.ViewModels
             }
         }
 
-        public string FadeOutMs
+        public string FadeOutSeconds
         {
-            get => _fadeOutMs;
+            get => _fadeOutSeconds;
             set
             {
-                if (_fadeOutMs != value)
+                if (_fadeOutSeconds != value)
                 {
-                    _fadeOutMs = value;
+                    _fadeOutSeconds = value;
                     OnPropertyChanged();
-                    ValidateFadeOutMs();
+                    ValidateFadeOutSeconds();
                     NotifyCanExecuteChanged();
                 }
             }
@@ -176,12 +179,12 @@ namespace InterdisciplinairProject.ViewModels
             }
         }
 
-        private void ValidateFadeInMs()
+        private void ValidateFadeInSeconds()
         {
-            ClearErrors(nameof(FadeInMs));
-            if (!int.TryParse(_fadeInMs, out int value) || value < 0)
+            ClearErrors(nameof(FadeInSeconds));
+            if (!decimal.TryParse(_fadeInSeconds, NumberStyles.Any, CommaCulture, out decimal value) || value < 0)
             {
-                AddError(nameof(FadeInMs), "Must be a positive integer.");
+                AddError(nameof(FadeInSeconds), "Must be a positive number.");
             }
         }
 
@@ -194,12 +197,12 @@ namespace InterdisciplinairProject.ViewModels
             }
         }
 
-        private void ValidateFadeOutMs()
+        private void ValidateFadeOutSeconds()
         {
-            ClearErrors(nameof(FadeOutMs));
-            if (!int.TryParse(_fadeOutMs, out int value) || value < 0)
+            ClearErrors(nameof(FadeOutSeconds));
+            if (!decimal.TryParse(_fadeOutSeconds, NumberStyles.Any, CommaCulture, out decimal value) || value < 0)
             {
-                AddError(nameof(FadeOutMs), "Must be a positive integer.");
+                AddError(nameof(FadeOutSeconds), "Must be a positive number.");
             }
         }
 
@@ -243,9 +246,9 @@ namespace InterdisciplinairProject.ViewModels
         {
             // Validate all fields
             ValidateName();
-            ValidateFadeInMs();
+            ValidateFadeInSeconds();
             ValidateDurationMs();
-            ValidateFadeOutMs();
+            ValidateFadeOutSeconds();
             ValidateDimmer();
 
             return !HasErrors;
@@ -258,11 +261,11 @@ namespace InterdisciplinairProject.ViewModels
                 return;
             }
 
-            // Update the scene model
+            // Update the scene model (convert seconds to milliseconds)
             _sceneModel.Name = _name;
-            _sceneModel.FadeInMs = int.Parse(_fadeInMs);
+            _sceneModel.FadeInMs = ConvertSecondsToMilliseconds(_fadeInSeconds);
             _sceneModel.DurationMs = int.Parse(_durationMs);
-            _sceneModel.FadeOutMs = int.Parse(_fadeOutMs);
+            _sceneModel.FadeOutMs = ConvertSecondsToMilliseconds(_fadeOutSeconds);
             _sceneModel.Dimmer = int.Parse(_dimmer);
 
             _window.DialogResult = true;
@@ -304,6 +307,31 @@ namespace InterdisciplinairProject.ViewModels
         private int ConvertSliderToDimmer(double sliderValue)
         {
             return (int)Math.Round((sliderValue / 100.0) * 255.0);
+        }
+
+        /// <summary>
+        /// Converts milliseconds to seconds as a string with decimal precision.
+        /// Uses comma as decimal separator.
+        /// </summary>
+        private string ConvertMillisecondsToSeconds(int milliseconds)
+        {
+            decimal seconds = milliseconds / 1000m;
+            // Remove trailing zeros and decimal point if whole number
+            string format = seconds % 1 == 0 ? "0" : "0.##";
+            return seconds.ToString(format, CommaCulture);
+        }
+
+        /// <summary>
+        /// Converts seconds (as string) to milliseconds.
+        /// Parses using comma as decimal separator.
+        /// </summary>
+        private int ConvertSecondsToMilliseconds(string secondsStr)
+        {
+            if (decimal.TryParse(secondsStr, NumberStyles.Any, CommaCulture, out decimal seconds))
+            {
+                return (int)Math.Round(seconds * 1000m);
+            }
+            return 0;
         }
     }
 }
