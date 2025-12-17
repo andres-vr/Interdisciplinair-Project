@@ -43,6 +43,11 @@ public enum ShowPlaybackState
     TransitioningToNext,
 
     /// <summary>
+    /// Waiting for user input (e.g., TAB key) to proceed.
+    /// </summary>
+    WaitingForTab,
+
+    /// <summary>
     /// Show playback completed successfully.
     /// </summary>
     Completed,

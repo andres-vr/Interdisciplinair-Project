@@ -47,4 +47,9 @@ public interface IShowPlaybackService
     /// Stops the current show playback and resets to the beginning.
     /// </summary>
     void Stop();
+
+    /// <summary>
+    /// If playback is waiting for a TAB press, this method will allow it to proceed.
+    /// </summary>
+    void ProceedFromTabWait();
 }

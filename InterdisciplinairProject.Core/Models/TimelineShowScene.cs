@@ -10,6 +10,7 @@ namespace InterdisciplinairProject.Core.Models
         private int _zIndex;
         private int _duration;
         private int _holdDurationMs;
+        private bool _waitForTab;
 
         /// <summary>
         /// Gets or sets the unique identifier for this timeline entry.
@@ -65,6 +66,22 @@ namespace InterdisciplinairProject.Core.Models
                 {
                     _holdDurationMs = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HoldDurationMs)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the timeline should pause and wait for a TAB key press before starting this scene.
+        /// </summary>
+        public bool WaitForTab
+        {
+            get => _waitForTab;
+            set
+            {
+                if (_waitForTab != value)
+                {
+                    _waitForTab = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(WaitForTab)));
                 }
             }
         }

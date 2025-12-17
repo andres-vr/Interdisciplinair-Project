@@ -93,6 +93,9 @@ namespace InterdisciplinairProject.ViewModels
             
             // Load the last show automatically
             _ = LoadLastShowAsync();
+
+            // Register for key presses
+            RegisterKeyCommands();
         }
 
         /// <summary>
@@ -108,6 +111,9 @@ namespace InterdisciplinairProject.ViewModels
             
             // Load the last show automatically
             _ = LoadLastShowAsync();
+
+            // Register for key presses
+            RegisterKeyCommands();
         }
 
 
@@ -1027,6 +1033,30 @@ namespace InterdisciplinairProject.ViewModels
             }
         }
 
+
+        /// <summary>
+        /// Handles key presses for the view.
+        /// </summary>
+        private void RegisterKeyCommands()
+        {
+            if (Application.Current?.MainWindow != null)
+            {
+                Application.Current.MainWindow.KeyDown += OnKeyDown;
+            }
+        }
+
+        private void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Tab)
+            {
+                if (_showPlaybackService.CurrentState == ShowPlaybackState.WaitingForTab)
+                {
+                    _showPlaybackService.ProceedFromTabWait();
+                    e.Handled = true; // Prevent default TAB behavior
+                }
+            }
+        }
+
         /// <summary>
         /// Toggles between play and pause states using IShowPlaybackService.
         /// </summary>
@@ -1197,6 +1227,12 @@ namespace InterdisciplinairProject.ViewModels
         {
             if (disposing)
             {
+                // Unregister keydown event
+                if (Application.Current?.MainWindow != null)
+                {
+                    Application.Current.MainWindow.KeyDown -= OnKeyDown;
+                }
+
                 _playbackCts?.Cancel();
                 _playbackCts?.Dispose();
                 _playbackCts = null;

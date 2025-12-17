@@ -109,6 +109,10 @@
                             <Run Text="s"/>
                         </TextBlock>
                         <Separator Margin="0,8,0,4"/>
+                        <CheckBox Content="Wait for TAB" 
+                                  IsChecked="{Binding SceneModel.WaitForTab, Mode=TwoWay}" 
+                                  Margin="0,4,0,4"/>
+                        <Separator Margin="0,4,0,8"/>
                         <TextBlock Text="Minimum: FadeIn + FadeOut" FontStyle="Italic" FontSize="10" Foreground="Gray"/>
                     </StackPanel>
                 </Border>

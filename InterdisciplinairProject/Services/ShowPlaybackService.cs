@@ -23,6 +23,7 @@ public class ShowPlaybackService : IShowPlaybackService
     private bool _isPaused;
     private ShowPlaybackState _currentState;
     private readonly object _stateLock = new();
+    private TaskCompletionSource<bool>? _tabWaitTcs;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ShowPlaybackService"/> class.
@@ -49,7 +50,8 @@ public class ShowPlaybackService : IShowPlaybackService
                        _currentState == ShowPlaybackState.FadingIn ||
                        _currentState == ShowPlaybackState.Holding ||
                        _currentState == ShowPlaybackState.FadingOut ||
-                       _currentState == ShowPlaybackState.TransitioningToNext;
+                       _currentState == ShowPlaybackState.TransitioningToNext ||
+                       _currentState == ShowPlaybackState.WaitingForTab;
             }
         }
     }
@@ -122,6 +124,12 @@ public class ShowPlaybackService : IShowPlaybackService
                 {
                     sceneIndex++;
                     continue;
+                }
+
+                // === WAIT FOR TAB (if configured) ===
+                if (timelineScene.WaitForTab)
+                {
+                    await WaitForTabAsync(scene, sceneIndex, show.TimelineScenes.Count, totalElapsedMs, totalDurationMs, progress, token);
                 }
 
                 Debug.WriteLine($"[PLAYBACK] Playing scene {sceneIndex + 1}/{show.TimelineScenes.Count}: '{scene.Name}'");
@@ -258,6 +266,20 @@ public class ShowPlaybackService : IShowPlaybackService
     }
 
     /// <summary>
+    /// If playback is waiting for a TAB press, this method will allow it to proceed.
+    /// </summary>
+    public void ProceedFromTabWait()
+    {
+        lock (_stateLock)
+        {
+            if (_currentState == ShowPlaybackState.WaitingForTab)
+            {
+                _tabWaitTcs?.TrySetResult(true);
+            }
+        }
+    }
+
+    /// <summary>
     /// Fades a scene from startDimmer to endDimmer over durationMs.
     /// </summary>
     private async Task FadeSceneAsync(
@@ -368,6 +390,34 @@ public class ShowPlaybackService : IShowPlaybackService
         }
         
         stopwatch.Stop();
+    }
+
+    /// <summary>
+    /// Pauses playback and waits for the TAB key to be pressed.
+    /// </summary>
+    private async Task WaitForTabAsync(
+        Scene scene,
+        int sceneIndex,
+        int totalScenes,
+        double baseElapsedMs,
+        double totalDurationMs,
+        IProgress<ShowPlaybackProgress>? progress,
+        CancellationToken token)
+    {
+        Debug.WriteLine($"[PLAYBACK] Waiting for TAB press to start scene '{scene.Name}'");
+        SetState(ShowPlaybackState.WaitingForTab);
+
+        // Report progress to indicate we are waiting
+        ReportProgress(progress, scene, sceneIndex, totalScenes, 0, baseElapsedMs, totalDurationMs, ShowPlaybackState.WaitingForTab);
+
+        _tabWaitTcs = new TaskCompletionSource<bool>();
+
+        // Wait for either the TCS to be completed (by TAB press) or for cancellation
+        await Task.WhenAny(_tabWaitTcs.Task, Task.Delay(-1, token));
+
+        token.ThrowIfCancellationRequested(); // Will throw if the token was cancelled while waiting
+
+        Debug.WriteLine("[PLAYBACK] TAB pressed, proceeding with scene.");
     }
 
     /// <summary>
