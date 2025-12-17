@@ -279,34 +279,45 @@ public class ShowPlaybackService : IShowPlaybackService
             return;
         }
 
-        int steps = Math.Max(1, durationMs / TimerIntervalMs);
-        double dimmerDelta = (endDimmer - startDimmer) / (double)steps;
-
-        for (int i = 0; i <= steps; i++)
+        var stopwatch = Stopwatch.StartNew();
+        
+        while (stopwatch.ElapsedMilliseconds < durationMs)
         {
             token.ThrowIfCancellationRequested();
 
             // Handle pause
-            while (_isPaused && !token.IsCancellationRequested)
+            if (_isPaused)
             {
-                await Task.Delay(TimerIntervalMs, token);
+                stopwatch.Stop();
+                while (_isPaused && !token.IsCancellationRequested)
+                {
+                    await Task.Delay(TimerIntervalMs, token);
+                }
+                stopwatch.Start();
             }
 
-            double currentDimmer = startDimmer + (dimmerDelta * i);
+            long elapsed = stopwatch.ElapsedMilliseconds;
+            double progressRatio = elapsed / (double)durationMs;
+            
+            // Calculate current dimmer based on progress
+            double currentDimmer = startDimmer + (double)(endDimmer - startDimmer) * progressRatio;
             currentDimmer = Math.Max(0, Math.Min(100, currentDimmer));
 
             await ApplyDimmerToSceneAsync(scene, (int)currentDimmer);
 
             // Report progress
-            double sceneElapsedMs = i * TimerIntervalMs;
-            double totalElapsed = baseElapsedMs + sceneElapsedMs;
-            ReportProgress(progress, scene, sceneIndex, totalScenes, sceneElapsedMs, totalElapsed, totalDurationMs, _currentState);
+            double totalElapsed = baseElapsedMs + elapsed;
+            ReportProgress(progress, scene, sceneIndex, totalScenes, elapsed, totalElapsed, totalDurationMs, _currentState);
 
-            if (i < steps)
-            {
-                await Task.Delay(TimerIntervalMs, token);
-            }
+            // Calculate delay to next tick to avoid drift
+            // We aim for TimerIntervalMs steps, but we just wait a bit to unblock UI/Thread
+            // Simple delay is fine because we recalculate position based on Stopwatch next iteration
+            await Task.Delay(TimerIntervalMs, token);
         }
+        
+        // Ensure final value
+        stopwatch.Stop();
+        await ApplyDimmerToSceneAsync(scene, endDimmer);
     }
 
     /// <summary>
@@ -327,22 +338,27 @@ public class ShowPlaybackService : IShowPlaybackService
             return;
         }
 
-        int steps = Math.Max(1, durationMs / TimerIntervalMs);
+        var stopwatch = Stopwatch.StartNew();
 
-        for (int i = 0; i < steps; i++)
+        while (stopwatch.ElapsedMilliseconds < durationMs)
         {
             token.ThrowIfCancellationRequested();
 
             // Handle pause
-            while (_isPaused && !token.IsCancellationRequested)
+            if (_isPaused)
             {
-                await Task.Delay(TimerIntervalMs, token);
+                stopwatch.Stop();
+                while (_isPaused && !token.IsCancellationRequested)
+                {
+                    await Task.Delay(TimerIntervalMs, token);
+                }
+                stopwatch.Start();
             }
 
             // Report progress
-            double sceneElapsedMs = i * TimerIntervalMs;
-            double totalElapsed = baseElapsedMs + sceneElapsedMs;
-            ReportProgress(progress, scene, sceneIndex, totalScenes, sceneElapsedMs, totalElapsed, totalDurationMs, _currentState);
+            long elapsed = stopwatch.ElapsedMilliseconds;
+            double totalElapsed = baseElapsedMs + elapsed;
+            ReportProgress(progress, scene, sceneIndex, totalScenes, elapsed, totalElapsed, totalDurationMs, _currentState);
 
             // IMPORTANT: Ensure we send DMX frames during the hold phase
             // Many DMX fixtures/controllers require continuous signal stream
@@ -350,6 +366,8 @@ public class ShowPlaybackService : IShowPlaybackService
 
             await Task.Delay(TimerIntervalMs, token);
         }
+        
+        stopwatch.Stop();
     }
 
     /// <summary>
