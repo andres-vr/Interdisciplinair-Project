@@ -22,6 +22,7 @@
         <converters:BoolToPlayPauseIconConverter x:Key="BoolToPlayPauseIconConverter"/>
         <converters:BoolToPlayPauseTextConverter x:Key="BoolToPlayPauseTextConverter"/>
         <converters:PlaybackStateToVisibilityConverter x:Key="PlaybackStateToVisibilityConverter"/>
+        <converters:ScaleFactorConverter x:Key="ScaleFactorConverter"/>
 
         <!-- ToolBar Tray styling -->
         <SolidColorBrush x:Key="ToolBarTrayBackground" Color="White"/>
@@ -91,7 +92,8 @@
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="200"/>
             </Grid.RowDefinitions>
 
             <!-- Timeline Area (Top Left White Space) -->
@@ -350,10 +352,27 @@
                 </Grid>
             </Border>
 
-            <!-- New title + Scene list (stacked) -->
-            <StackPanel Grid.Column="0" Grid.Row="1" Margin="0,0,5,0">
-                <!-- New Title: same style as Timeline header -->
-                <Border Background="#2196F3"
+            <!-- Horizontal GridSplitter between timeline and scenes panel -->
+            <GridSplitter Grid.Column="0"
+                          Grid.Row="1"
+                          Height="5"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Center"
+                          Background="#B0B0B0"
+                          ShowsPreview="True"
+                          ResizeBehavior="PreviousAndNext"
+                          Cursor="SizeNS"/>
+
+            <!-- Scenes panel with Grid instead of StackPanel for proper resizing -->
+            <Grid Grid.Column="0" Grid.Row="2" Margin="0,0,5,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Title: same style as Timeline header -->
+                <Border Grid.Row="0"
+                        Background="#2196F3"
                         Height="25"
                         Padding="5,2">
                     <StackPanel Orientation="Horizontal">
@@ -365,45 +384,54 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Scenes list -->
-                <ListBox x:Name="sceneListView"
-                         Margin="0"
-                         ItemsSource="{Binding Scenes}"
-                         BorderBrush="#CCC"
-                         BorderThickness="1"
-                         Background="#FAFAFA"
-                         SelectionMode="Extended"
-                         HorizontalContentAlignment="Center">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
+                <!-- Scenes list with ScrollViewer -->
+                <ScrollViewer Grid.Row="1"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto"
+                              x:Name="ScenesScrollViewer">
+                    <ListBox x:Name="sceneListView"
+                             Margin="0"
+                             ItemsSource="{Binding Scenes}"
+                             BorderBrush="#CCC"
+                             BorderThickness="1"
+                             Background="#FAFAFA"
+                             SelectionMode="Extended"
+                             HorizontalContentAlignment="Center">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
 
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <!-- Let the Scene item be the DataContext for SceneControl -->
-                            <views:SceneControl x:Name="scenecontrol" Margin="0" DataContext="{Binding}" />
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <!-- Viewbox that scales based on available height -->
+                                <Viewbox Stretch="Uniform" 
+                                         StretchDirection="Both"
+                                         Height="{Binding ActualHeight, ElementName=ScenesScrollViewer, Converter={StaticResource ResourceKey=ScaleFactorConverter}, ConverterParameter=0.9}">
+                                    <views:SceneControl x:Name="scenecontrol" Margin="0" DataContext="{Binding}" />
+                                </Viewbox>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
 
-                    <i:Interaction.Triggers>
-                        <i:EventTrigger EventName="SelectionChanged">
-                            <i:InvokeCommandAction Command="{Binding SceneSelectionChangedCommand}"
+                        <i:Interaction.Triggers>
+                            <i:EventTrigger EventName="SelectionChanged">
+                                <i:InvokeCommandAction Command="{Binding SceneSelectionChangedCommand}"
                                                        CommandParameter="{Binding SelectedItems, ElementName=sceneListView}" />
-                        </i:EventTrigger>
-                    </i:Interaction.Triggers>
-                </ListBox>
-            </StackPanel>
+                            </i:EventTrigger>
+                        </i:Interaction.Triggers>
+                    </ListBox>
+                </ScrollViewer>
+            </Grid>
 
             <GridSplitter Grid.Column="0"
-                          Grid.RowSpan="2"
+                          Grid.RowSpan="3"
                           Width="5"
                           Background="Gray"
                           ShowsPreview="True" Margin="0,0,0,0" />
 
             <!-- Scene Header and Fixtures Section -->
-            <Grid Grid.Column="1" Grid.RowSpan="2" Background="WhiteSmoke">
+            <Grid Grid.Column="1" Grid.RowSpan="3" Background="WhiteSmoke">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
