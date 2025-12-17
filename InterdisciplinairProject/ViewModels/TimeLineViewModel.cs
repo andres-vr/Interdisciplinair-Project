@@ -23,6 +23,9 @@ namespace InterdisciplinairProject.ViewModels
         // suppress pushing changes back to parent when they originate from the model (e.g. fades)
         private bool _suppressParentUpdate;
 
+        [ObservableProperty]
+        private bool _isPlaying;
+
         public TimeLineViewModel(TimelineShowScene? scene = null, ShowbuilderViewModel? parentShowVm = null)
         {
             _sceneModel = scene;

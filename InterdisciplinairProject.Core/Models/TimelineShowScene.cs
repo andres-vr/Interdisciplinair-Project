@@ -11,6 +11,7 @@ namespace InterdisciplinairProject.Core.Models
         private int _duration;
         private int _holdDurationMs;
         private bool _waitForTab;
+        private bool _isPlaying;
 
         /// <summary>
         /// Gets or sets the unique identifier for this timeline entry.
@@ -82,6 +83,22 @@ namespace InterdisciplinairProject.Core.Models
                 {
                     _waitForTab = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(WaitForTab)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this scene is currently playing.
+        /// </summary>
+        public bool IsPlaying
+        {
+            get => _isPlaying;
+            set
+            {
+                if (_isPlaying != value)
+                {
+                    _isPlaying = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPlaying)));
                 }
             }
         }

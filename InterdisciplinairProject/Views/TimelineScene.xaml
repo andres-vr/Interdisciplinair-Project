@@ -12,16 +12,12 @@
 
     <UserControl.Resources>
         <converters:SceneDurationToWidthConverter x:Key="SceneDurationToWidthConverter"/>
+        <converters:IsPlayingToBackgroundConverter x:Key="IsPlayingToBackgroundConverter"/>
     </UserControl.Resources>
 
     <Border BorderBrush="#E0E0E0" BorderThickness="2" CornerRadius="0" Padding="5" Margin="0"
-            Width="100">
-        <Border.Background>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#FFFFFF" Offset="0"/>
-                <GradientStop Color="#F8F9FA" Offset="1"/>
-            </LinearGradientBrush>
-        </Border.Background>
+            Width="100"
+            Background="{Binding SceneModel.IsPlaying, Converter={StaticResource IsPlayingToBackgroundConverter}}">
         <Border.Effect>
             <DropShadowEffect Color="#000000" Opacity="0.15" BlurRadius="12" ShadowDepth="4" Direction="270"/>
         </Border.Effect>

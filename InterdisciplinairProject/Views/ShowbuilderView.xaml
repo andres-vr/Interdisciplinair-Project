@@ -79,7 +79,7 @@
                         </Style>
                     </Button.Resources>
                 </Button>
-                <Label Content="{Binding Message}" />               
+                <Label Content="{Binding Message}" />
             </ToolBar>
         </ToolBarTray>
 
@@ -135,10 +135,10 @@
                                 <!-- Placeholder content -->
                                 <StackPanel VerticalAlignment="Center" 
                                             HorizontalAlignment="Center"
-                                            Opacity="0.5">                                    
+                                            Opacity="0.5">
                                 </StackPanel>
 
-                                  <ListBox x:Name="sceneTimeLineListView"
+                                <ListBox x:Name="sceneTimeLineListView"
          Margin="0"
          Grid.Column="0"
          Grid.Row="1"
@@ -150,51 +150,51 @@
          SelectionMode="Single"
          HorizontalContentAlignment="Stretch"
          VirtualizingStackPanel.IsVirtualizing="False">
-    <i:Interaction.Behaviors>
-        <i:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.2" />
-    </i:Interaction.Behaviors>
+                                    <i:Interaction.Behaviors>
+                                        <i:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.2" />
+                                    </i:Interaction.Behaviors>
 
-    <ListBox.ItemsPanel>
-        <ItemsPanelTemplate>
-            <StackPanel Orientation="Horizontal">
-                <i:Interaction.Behaviors>
-                    <i:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.2" />
-                </i:Interaction.Behaviors>
-            </StackPanel>
-        </ItemsPanelTemplate>
-    </ListBox.ItemsPanel>
+                                    <ListBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <i:Interaction.Behaviors>
+                                                    <i:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.2" />
+                                                </i:Interaction.Behaviors>
+                                            </StackPanel>
+                                        </ItemsPanelTemplate>
+                                    </ListBox.ItemsPanel>
 
-    <ListBox.ItemContainerStyle>
-        <Style TargetType="ListBoxItem">
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="0"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-            <!-- Bind ZIndex for overlapping elements -->
-            <Setter Property="Panel.ZIndex" Value="{Binding ZIndex}"/>
-        </Style>
-    </ListBox.ItemContainerStyle>
+                                    <ListBox.ItemContainerStyle>
+                                        <Style TargetType="ListBoxItem">
+                                            <Setter Property="Padding" Value="0"/>
+                                            <Setter Property="Margin" Value="0"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                                            <!-- Bind ZIndex for overlapping elements -->
+                                            <Setter Property="Panel.ZIndex" Value="{Binding ZIndex}"/>
+                                        </Style>
+                                    </ListBox.ItemContainerStyle>
 
-    <ListBox.ItemTemplate>
-        <DataTemplate>
-            <!-- Let the Scene item be the DataContext for SceneControl -->
-            <views:TimelineScene x:Name="timelinescene" DataContext="{Binding}" />
-        </DataTemplate>
-    </ListBox.ItemTemplate>
-    <i:Interaction.Triggers>
-        <i:EventTrigger EventName="TimelineSelectionChanged">
-            <i:InvokeCommandAction Command="{Binding TimelineSceneSelectionChanged}"
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <!-- Let the Scene item be the DataContext for SceneControl -->
+                                            <views:TimelineScene x:Name="timelinescene" DataContext="{Binding}" />
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                    <i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="TimelineSelectionChanged">
+                                            <i:InvokeCommandAction Command="{Binding TimelineSceneSelectionChanged}"
                                    CommandParameter="{Binding SelectedItem, ElementName=sceneTimeLineListView}" />
-        </i:EventTrigger>
-    </i:Interaction.Triggers>
-</ListBox>
+                                        </i:EventTrigger>
+                                    </i:Interaction.Triggers>
+                                </ListBox>
                                 <!-- Progress marker overlay (vertical red line) -->
                                 <Canvas Panel.ZIndex="100" VerticalAlignment="Bottom" IsHitTestVisible="False">
                                     <Canvas.Effect>
                                         <DropShadowEffect Color="#000000" Opacity="0.5" BlurRadius="6" ShadowDepth="2"/>
                                     </Canvas.Effect>
-                                    <Line X1="0" Y1="0" X2="0" Y2="800" Stroke="Red" StrokeThickness="5">
+                                    <Line X1="0" Y1="0" X2="0" Y2="800" Stroke="Red" StrokeThickness="20" HorizontalAlignment="Center" Height="17" VerticalAlignment="Top" Canvas.Top="-5">
                                         <Line.RenderTransform>
                                             <TranslateTransform>
                                                 <TranslateTransform.X>
@@ -298,7 +298,7 @@
                             </StackPanel>
 
                             <!-- Progress/Time Display (Center) -->
-                                <StackPanel Grid.Column="1" 
+                            <StackPanel Grid.Column="1" 
                                     Orientation="Horizontal" 
                                     HorizontalAlignment="Center" 
                                     VerticalAlignment="Center">
@@ -316,7 +316,7 @@
                                        FontSize="14" 
                                        Foreground="#666"
                                        VerticalAlignment="Center"/>
-                                </StackPanel>
+                            </StackPanel>
 
                             <!-- Add Scene Button (Right) -->
                             <Button Grid.Column="2" 
@@ -401,7 +401,7 @@
                           Width="5"
                           Background="Gray"
                           ShowsPreview="True" Margin="0,0,0,0" />
-            
+
             <!-- Scene Header and Fixtures Section -->
             <Grid Grid.Column="1" Grid.RowSpan="2" Background="WhiteSmoke">
                 <Grid.RowDefinitions>
@@ -418,7 +418,7 @@
                     <Border.Effect>
                         <DropShadowEffect Color="#000000" Opacity="0.1" BlurRadius="4" ShadowDepth="2" Direction="270"/>
                     </Border.Effect>
-                    
+
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -651,13 +651,13 @@
                                                                         <ColumnDefinition Width="*"/>
                                                                         <ColumnDefinition Width="Auto"/>
                                                                     </Grid.ColumnDefinitions>
-                                                                    
+
                                                                     <TextBlock Grid.Column="0"
                                                                                Text="{Binding Name}"
                                                                                FontWeight="Bold"
                                                                                FontSize="13"
                                                                                VerticalAlignment="Center"/>
-                                                                    
+
                                                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                                                                         <TextBlock Text="Value: "
                                                                                    FontWeight="SemiBold"
@@ -707,7 +707,7 @@
                                                                                 <ColumnDefinition Width="*"/>
                                                                                 <ColumnDefinition Width="Auto"/>
                                                                             </Grid.ColumnDefinitions>
-                                                                            
+
                                                                             <StackPanel Grid.Column="0" Orientation="Horizontal">
                                                                                 <TextBlock Text="Channel Effect"
                                                                                            FontWeight="SemiBold"
@@ -722,7 +722,7 @@
                                                                                            FontSize="11"
                                                                                            Foreground="#2196F3"/>
                                                                             </StackPanel>
-                                                                            
+
                                                                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                                                                 <TextBlock Text="Enabled: "
                                                                                            FontSize="10"

@@ -1186,6 +1186,12 @@ namespace InterdisciplinairProject.ViewModels
                 CurrentTime = progress.CurrentTime;
                 TotalTime = progress.TotalTime;
                 PlaybackState = progress.State;
+
+                // Update IsPlaying state for timeline scenes
+                for (int i = 0; i < TimeLineScenes.Count; i++)
+                {
+                    TimeLineScenes[i].IsPlaying = (i == progress.CurrentSceneIndex);
+                }
             });
         }
 
@@ -1202,6 +1208,12 @@ namespace InterdisciplinairProject.ViewModels
             PlaybackState = ShowPlaybackState.Idle;
             ProgressPosition = 0;
             CurrentTime = TimeSpan.Zero;
+
+            // Reset all timeline scenes to not playing
+            foreach (var scene in TimeLineScenes)
+            {
+                scene.IsPlaying = false;
+            }
 
             // Keep TotalTime displayed
             double totalMs = TotalDurationMs;
