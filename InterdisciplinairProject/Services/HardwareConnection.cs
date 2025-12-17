@@ -174,12 +174,16 @@ public class HardwareConnection : IHardwareConnection
             return false;
         }
 
-        Debug.WriteLine($"[HARDWARE] SendSceneAsync: sending scene '{scene.Name}' with {scene.Fixtures.Count} fixtures");
+        Debug.WriteLine($"[HARDWARE] SendSceneAsync: sending scene '{scene.Name}' with {scene.Fixtures.Count} fixtures, dimmer={scene.Dimmer}");
 
         try
         {
             // Clear all channels before sending the scene
             _dmxService.ClearAllChannels();
+
+            // Calculate dimmer scaling factor (scene.Dimmer is 0-255)
+            double dimmerScale = scene.Dimmer / 255.0;
+            Debug.WriteLine($"[HARDWARE] Scene dimmer scale: {dimmerScale:F3} ({scene.Dimmer}/255)");
 
             // Set all fixture channels in the DMX universe
             foreach (var fixture in scene.Fixtures)
@@ -207,9 +211,12 @@ public class HardwareConnection : IHardwareConnection
                         }
                     }
 
-                    byte value = (byte)channel.Parameter;
-                    _dmxService.SetChannel(dmxAddress, value);
-                    Debug.WriteLine($"[HARDWARE] Set DMX[{dmxAddress}] = {value} ({fixture.InstanceId}.{channel.Name})");
+                    // Apply scene dimmer scaling to the channel value
+                    byte originalValue = (byte)channel.Parameter;
+                    byte scaledValue = (byte)Math.Round(originalValue * dimmerScale);
+                    
+                    _dmxService.SetChannel(dmxAddress, scaledValue);
+                    Debug.WriteLine($"[HARDWARE] Set DMX[{dmxAddress}] = {scaledValue} (original={originalValue}, scaled by {dimmerScale:F3}) ({fixture.InstanceId}.{channel.Name})");
                 }
             }
 
