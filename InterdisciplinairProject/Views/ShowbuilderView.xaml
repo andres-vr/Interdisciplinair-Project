@@ -62,7 +62,7 @@
 
                 <TextBox Width="150" Text="{Binding CurrentShowName}" Margin="0,0,15,0" VerticalAlignment="Center" Height="21"/>
 
-                <Button Content="Import Scene" Command="{Binding ImportScenesCommand}" Margin="2,0" 
+                <Button Content="Import Scene(s)" Command="{Binding ImportScenesCommand}" Margin="2,0" 
                     Background="#2196F3" BorderBrush="#1976D2" Padding="5,2" Foreground="White"/>
                 <Button Content="Import Show" Command="{Binding OpenShowCommand}" Margin="2,0"
                     Background="#2196F3" BorderBrush="#1976D2" Padding="5,2" Foreground="White"/>

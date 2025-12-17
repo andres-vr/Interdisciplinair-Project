@@ -153,7 +153,7 @@ namespace InterdisciplinairProject.ViewModels
         {
             var openFileDialog = new Microsoft.Win32.OpenFileDialog
             {
-                Title = "Import Scene",
+                Title = "Import Scenes",
                 Filter = "JSON files (*.json)|*.json",
                 Multiselect = false,
             };
@@ -164,57 +164,85 @@ namespace InterdisciplinairProject.ViewModels
                 {
                     string selectedScenePath = openFileDialog.FileName;
 
-                    InterdisciplinairProject.Core.Models.Scene scene = SceneExtractor.ExtractScene(selectedScenePath);
-                    if (!Scenes.Any(s => s.Id == scene.Id))
+                    // Use ExtractScenes to get all scenes from the file
+                    List<InterdisciplinairProject.Core.Models.Scene> extractedScenes = SceneExtractor.ExtractScenes(selectedScenePath);
+
+                    int importedCount = 0;
+                    int skippedCount = 0;
+
+                    foreach (var scene in extractedScenes)
                     {
-                        // ensure imported scene slider starts at 0
-                        var showScene = new SceneModel
+                        // Check if scene already exists
+                        if (!Scenes.Any(s => s.Id == scene.Id))
                         {
-                            Id = scene.Id,
-                            Name = scene.Name,
-                            Dimmer = 0,
-                            FadeInMs = scene.FadeInMs,
-                            FadeOutMs = scene.FadeOutMs,
-                            Fixtures = scene.Fixtures?.Select(f => new Fixture
+                            // ensure imported scene slider starts at 0
+                            var showScene = new SceneModel
                             {
-                                InstanceId = f.InstanceId,
-                                FixtureId = f.FixtureId,
-                                Name = f.Name,
-                                Manufacturer = f.Manufacturer,
+                                Id = scene.Id,
+                                Name = scene.Name,
                                 Dimmer = 0,
-                                // Copy the Channels collection
-                                Channels = new System.Collections.ObjectModel.ObservableCollection<Channel>(
-                                    f.Channels?.Select(c => new Channel
-                                    {
-                                        Name = c.Name,
-                                        Type = c.Type,
-                                        Value = c.Value,
-                                        Parameter = c.Parameter,
-                                        Min = c.Min,
-                                        Max = c.Max,
-                                        Time = c.Time,
-                                        ChannelEffect = new ChannelEffect
+                                FadeInMs = scene.FadeInMs,
+                                FadeOutMs = scene.FadeOutMs,
+                                Fixtures = scene.Fixtures?.Select(f => new Fixture
+                                {
+                                    InstanceId = f.InstanceId,
+                                    FixtureId = f.FixtureId,
+                                    Name = f.Name,
+                                    Manufacturer = f.Manufacturer,
+                                    Dimmer = 0,
+                                    // Copy the Channels collection
+                                    Channels = new System.Collections.ObjectModel.ObservableCollection<Channel>(
+                                        f.Channels?.Select(c => new Channel
                                         {
-                                            Enabled = c.ChannelEffect?.Enabled ?? false,
-                                            EffectType = c.ChannelEffect?.EffectType ?? Core.Models.Enums.EffectType.FadeIn,
-                                            Time = c.ChannelEffect?.Time ?? 0,
-                                            Min = c.ChannelEffect?.Min ?? 0,
-                                            Max = c.ChannelEffect?.Max ?? 255,
-                                            Parameters = c.ChannelEffect?.Parameters != null
-                                                ? new System.Collections.Generic.Dictionary<string, object>(c.ChannelEffect.Parameters)
-                                                : new System.Collections.Generic.Dictionary<string, object>()
-                                        }
-                                    }) ?? Enumerable.Empty<Channel>()
-                                )
-                            }).ToList()
-                        };
-                        Scenes.Add(showScene);
-                        Message = $"Scene '{scene.Name}' imported successfully!";
-                        hasUnsavedChanges = true;
+                                            Name = c.Name,
+                                            Type = c.Type,
+                                            Value = c.Value,
+                                            Parameter = c.Parameter,
+                                            Min = c.Min,
+                                            Max = c.Max,
+                                            Time = c.Time,
+                                            ChannelEffect = new ChannelEffect
+                                            {
+                                                Enabled = c.ChannelEffect?.Enabled ?? false,
+                                                EffectType = c.ChannelEffect?.EffectType ?? Core.Models.Enums.EffectType.FadeIn,
+                                                Time = c.ChannelEffect?.Time ?? 0,
+                                                Min = c.ChannelEffect?.Min ?? 0,
+                                                Max = c.ChannelEffect?.Max ?? 255,
+                                                Parameters = c.ChannelEffect?.Parameters != null
+                                                    ? new System.Collections.Generic.Dictionary<string, object>(c.ChannelEffect.Parameters)
+                                                    : new System.Collections.Generic.Dictionary<string, object>(),
+                                            },
+                                        }) ?? Enumerable.Empty<Channel>()
+                                    ),
+                                }).ToList(),
+                            };
+                            Scenes.Add(showScene);
+                            importedCount++;
+                        }
+                        else
+                        {
+                            skippedCount++;
+                        }
+                    }
+
+                    hasUnsavedChanges = true;
+
+                    // Show result message
+                    if (importedCount > 0 && skippedCount == 0)
+                    {
+                        Message = $"{importedCount} scene(s) geïmporteerd!";
+                    }
+                    else if (importedCount > 0 && skippedCount > 0)
+                    {
+                        Message = $"{importedCount} scene(s) geïmporteerd, {skippedCount} overgeslagen (bestonden al).";
+                    }
+                    else if (skippedCount > 0)
+                    {
+                        Message = $"Geen scenes geïmporteerd. {skippedCount} scene(s) bestonden al.";
                     }
                     else
                     {
-                        Message = "This scene has already been imported.";
+                        Message = "Geen scenes gevonden in het bestand.";
                     }
                 }
             }
