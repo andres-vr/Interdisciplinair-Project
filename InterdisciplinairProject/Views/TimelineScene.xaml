@@ -30,7 +30,7 @@
             <!-- Left arrow button (correct left pointing icon) -->
             <Button Height="25" Width="25"
                     HorizontalAlignment="Left"
-                    VerticalAlignment="Top"
+                        VerticalAlignment="Top"
                     Margin="5,5,0,0"
                     Command="{Binding MoveSceneCommand}"
                     CommandParameter="left"

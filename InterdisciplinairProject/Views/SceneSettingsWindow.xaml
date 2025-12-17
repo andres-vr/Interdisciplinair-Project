@@ -185,17 +185,6 @@
                                Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=FadeInMsTextBox}"
                                Margin="0,4,0,16"/>
 
-                    <!-- Duration -->
-                    <TextBlock Text="Duration (ms) *" Style="{StaticResource ModernLabel}"/>
-                    <TextBox x:Name="DurationMsTextBox"
-                             Text="{Binding DurationMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
-                             Style="{StaticResource ModernTextBox}"
-                             Margin="0,0,0,0"/>
-                    <TextBlock Style="{StaticResource ErrorText}"
-                               Visibility="{Binding (Validation.HasError), ElementName=DurationMsTextBox, Converter={StaticResource BooleanToVisibilityConverter}}"
-                               Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=DurationMsTextBox}"
-                               Margin="0,4,0,16"/>
-
                     <!-- Fade Out Time -->
                     <TextBlock Text="Fade Out Time (ms) *" Style="{StaticResource ModernLabel}"/>
                     <TextBox x:Name="FadeOutMsTextBox"

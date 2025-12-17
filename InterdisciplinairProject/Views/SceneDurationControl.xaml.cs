@@ -7,6 +7,7 @@ namespace InterdisciplinairProject.Views
         public SceneDurationControl()
         {
             InitializeComponent();
+            InfoButton.Click += (s, e) => DurationPopup.IsOpen = !DurationPopup.IsOpen;
         }
     }
 }
